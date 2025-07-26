@@ -8,9 +8,26 @@ object frmMain: TfrmMain
   DesignTimePPI = 144
   OnActivate = FormActivate
   OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnDblClick = FormDblClick
   OnDestroy = FormDestroy
   OnDropFiles = FormDropFiles
+  OnKeyDown = FormKeyDown
   OnShow = FormShow
+  object XMLConfig: TXMLConfig
+    StartEmpty = False
+    RootName = 'Application'
+    ReadOnly = False
+    Left = 56
+    Top = 40
+  end
+  object IdleTimerMouseHide: TIdleTimer
+    AutoEnabled = True
+    Interval = 1500
+    OnTimer = IdleTimerMouseHideTimer
+    OnStopTimer = IdleTimerMouseHideStopTimer
+    Left = 248
+    Top = 40
+  end
 end

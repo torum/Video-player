@@ -15,13 +15,19 @@ type
   { TfrmMain }
 
   TfrmMain = class(TForm)
+    IdleTimerMouseHide: TIdleTimer;
+    XMLConfig: TXMLConfig;
     procedure FormActivate(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure FormCreate(Sender: TObject);
     procedure FormDblClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormDropFiles(Sender: TObject; const FileNames: array of string);
+    procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure FormShow(Sender: TObject);
+    procedure IdleTimerMouseHideStopTimer(Sender: TObject);
+    procedure IdleTimerMouseHideTimer(Sender: TObject);
 
   private 
     FintOldWndStyle:integer;
@@ -59,8 +65,8 @@ type
     procedure SetFullScreen_Win32(blnOn: boolean);
     function GetCurrentMonitor():TMonitor;
     function GetCurrentMonitorIndex():integer;
-  protected
-    procedure CreateParams(var Params: TCreateParams); override;
+    procedure RestoreFormState;
+    procedure StoreFormState;
   public
     cPlayer: TMPVBasePlayer;
     property FileList: TStringList read FstFileList;
@@ -93,33 +99,13 @@ var
 implementation
 
 
-uses
-  UScreen;
-
-
 {$R *.lfm}
 
 { TfrmMain }
 
-procedure TfrmMain.CreateParams(var Params: TCreateParams);
-begin
-  {$IFDEF FPC}
-    inherited CreateParams(Params);
-  {$ELSE}
-    inherited;
-  {$ENDIF}
-
-  //params.Style := Params.Style AND NOT WS_CAPTION;//params.Style or WS_CAPTION;
-  //Params.ExStyle := Params.Exstyle or WS_EX_OVERLAPPEDWINDOW;
-
-  //Params.Style := Params.Style AND NOT WS_CAPTION;
-
-  //Params.Style := Params.Style or WS_BORDER or WS_THICKFRAME;
-  //Params.Style := WS_CLIPCHILDREN or WS_DLGFRAME or WS_THICKFRAME or WS_SYSMENU or WS_GROUP or WS_TABSTOP;
-  //Params.ExStyle:=WS_EX_APPWINDOW or WS_EX_CONTROLPARENT;
-end;
-
 procedure TfrmMain.FormCreate(Sender: TObject);
+var
+  configFile:string;
 begin
 
   self.Caption := 'Movie Player';
@@ -151,40 +137,59 @@ begin
   // TODO:
   FstrInitialDir := '';
   {$endif}
-  {
-  //BorderStyle := bsNone;
-  SetWindowLong(Handle, GWL_STYLE,
-      WS_POPUP or WS_CLIPSIBLINGS or WS_CLIPCHILDREN or WS_SYSMENU);
-  SetWindowLong(Handle, GWL_EXSTYLE, WS_EX_CONTROLPARENT or WS_EX_APPWINDOW);
-  }
-          
-  //self.parent:= frmScreen;
 
+  // Load settings
+  configFile := ReplaceStr(ExtractFileName(ParamStr(0)),ExtractFileExt(ParamStr(0)),'.config');
+  if (not FileExists(ExtractFilePath(Application.ExeName)+configFile)) and ForceDirectories(GetAppConfigDir(false)) then
+  begin
+    {$ifdef windows}
+    XMLConfig.FileName:=GetAppConfigDir(false)+configFile;
+    {$else}
+    XMLConfig.FileName:=GetAppConfigDir(false)+'.'+ReplaceStr(ExtractFileName(ParamStr(0)),ExtractFileExt(ParamStr(0)),'') +'.config';
+    {$endif}
+  end else begin
+    {$ifdef windows}
+    XMLConfig.FileName:=ExtractFilePath(Application.ExeName)+configFile;
+    {$else}
+    XMLConfig.FileName:='.'+ReplaceStr(ExtractFileName(ParamStr(0)),ExtractFileExt(ParamStr(0)),'') +'.config';
+    {$endif}
+  end;
 
+  if (FOptBackgroundBlack) then
+  begin
+    self.Color:=clBlack;
+  end else
+  begin
+    self.Color:=clWhite;
+  end;
+
+  // This must be in "FormCreate", "FormShow" causes weird bug.
+  if fileexists(XMLConfig.FileName) then
+  begin
+     RestoreFormState;
+  end;
+
+  // Init player.
   cPlayer := TMPVBasePlayer.Create;
   cPlayer.InitPlayer(IntToStr(self.Handle), '', '', '');
-
 
 end;
 
 procedure TfrmMain.FormActivate(Sender: TObject);
 begin
 
-
-end;
-
-procedure TfrmMain.FormClose(Sender: TObject; var CloseAction: TCloseAction);
-begin
-  self.hide;
 end;
 
 procedure TfrmMain.FormShow(Sender: TObject);
 begin
+
+
 {$ifdef windows}
   // Apply dark themed title bar.
   // https://forum.lazarus.freepascal.org/index.php/topic,59172.msg441116.html
   ApplyFormDarkTitle(self, FoptBackgroundBlack, true);
 {$endif}
+
 end;
 
 procedure TfrmMain.LoadDirectories(const Dirs: TStringList; FList: TStringList);
@@ -433,34 +438,162 @@ begin
   end;
 end;
 
-function TfrmMain.GetCurrentMonitor():TMonitor;
-begin
-  if not Assigned(FCurrentMonitor) then
-  begin
-    FCurrentMonitor := Screen.MonitorFromWindow(Handle);
-    result:=FCurrentMonitor;
-  end else
-  begin
-    result:=FCurrentMonitor;
-  end;
-end;
-
-function TfrmMain.GetCurrentMonitorIndex():integer;
+procedure TfrmMain.FormKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
 var
-  i:integer;
+  plState:TMPVPlayerState;
+  curVol:double;
 begin
-  result:=0;
-  for i:=0 to Screen.MonitorCount-1 do
+
+  if ((Key = VK_F11) or (Key = VK_ESCAPE)) then
   begin
-    if CurrentMonitor = Screen.Monitors[i] then
+    if (FisFullscreen) then
     begin
-      result:=i;
-      break;
+      ShowFullScreen(false);
+    end else
+    begin
+      //ShowFullScreen(true);
+    end;
+    exit;
+  end;
+
+  if ((Chr(Key) = 'F') or (Chr(Key) = 'S')) then
+  begin
+    if (FisFullscreen) then
+    begin
+      ShowFullScreen(false);
+    end else
+    begin
+      ShowFullScreen(true);
+    end;
+    exit;
+  end;
+
+  if (Chr(Key) = 'Q') then
+  begin
+    if (ssCtrl in Shift) then
+    begin
+      close;
     end;
   end;
+
+  //Player
+
+  plState := cPlayer.GetState;
+
+  // Pause/Start
+  if (Key = VK_PAUSE) or (Key = VK_SPACE) then
+  begin
+    if (plState = TMPVPlayerState.mpsPlay) then
+    begin
+      cPlayer.Pause;
+    end
+    else if (plState = TMPVPlayerState.mpsPause) then
+    begin
+      cPlayer.Resume;
+    end
+    else if (plState = TMPVPlayerState.mpsStop) then // TODO: need to check.
+    begin
+      //outputdebugstring(pchar('mpsStop'));
+      if (FileList.Count > 0) then
+      begin
+        DispayVideo(FileList[0]);
+        //outputdebugstring(pchar(FileList[0]));
+      end;
+    end;
+  end;
+
+  if (plState = TMPVPlayerState.mpsPlay) then
+  begin
+
+    // Skip
+    if (Key = VK_RIGHT) then
+    begin
+      if (ssCtrl in Shift) then
+      begin
+        cPlayer.Seek(100,true);
+      end else
+      begin
+        cPlayer.Seek(10,true);
+      end;
+    end;
+
+    // Back
+    if (Key = VK_LEFT) or (Key = VK_BACK) then
+    begin
+      if (ssCtrl in Shift) then
+      begin
+        cPlayer.Seek(-100,true);
+      end else
+      begin
+        cPlayer.Seek(-10,true);
+      end;
+    end;
+
+    // Volume
+    if (Key = VK_UP) then
+    begin
+      curVol := cPlayer.GetVolume;
+
+      if (ssCtrl in Shift) then
+      begin
+        cPlayer.SetVolume(curVol+10);
+      end else
+      begin
+        cPlayer.SetVolume(curVol+5);
+      end;
+    end;
+
+    if (Key = VK_DOWN) then
+    begin
+      curVol := cPlayer.GetVolume;
+
+      if (ssCtrl in Shift) then
+      begin
+        cPlayer.SetVolume(curVol-10);
+      end else
+      begin
+        cPlayer.SetVolume(curVol-5);
+      end;
+    end;
+
+  end;
+        {
+
+        if (Chr(Key) = 'I') then
+        begin
+          // Stretch In
+          frmFullscreen.MenuItemFitClick(sender);
+        end;
+        if (Chr(Key) = 'O') then
+        begin
+          // Stretch Out
+          frmFullscreen.MenuItemExpandClick(sender);
+        end;
+        if (Chr(Key) = 'E') then
+        begin
+          // Effect
+          frmFullscreen.MenuItemEffectClick(sender);
+        end;
+        if (Chr(Key) = 'N') then
+        begin
+          // Random
+          frmFullscreen.MenuItemRandomClick(sender);
+        end;
+        if (Chr(Key) = 'R') then
+        begin
+          // Repeat
+          frmFullscreen.MenuItemRepeatClick(sender);
+        end;
+
+        if ((Key = VK_RMENU) or (Key = VK_LMENU) or (Key = VK_MENU)) then
+        begin
+          frmFullscreen.PopupMenu.PopUp(0,0);
+        end;
+        }
+
+
 end;
-
-
 
 procedure TfrmMain.FormDblClick(Sender: TObject);
 begin
@@ -472,7 +605,6 @@ begin
     ShowFullScreen(true);
   end;
 end;
-
 
 procedure TfrmMain.ShowFullScreen(blnOn: boolean);
 begin
@@ -625,6 +757,117 @@ begin
   end;
 end;
 
+function TfrmMain.GetCurrentMonitor():TMonitor;
+begin
+  if not Assigned(FCurrentMonitor) then
+  begin
+    FCurrentMonitor := Screen.MonitorFromWindow(Handle);
+    result:=FCurrentMonitor;
+  end else
+  begin
+    result:=FCurrentMonitor;
+  end;
+end;
+
+function TfrmMain.GetCurrentMonitorIndex():integer;
+var
+  i:integer;
+begin
+  result:=0;
+  for i:=0 to Screen.MonitorCount-1 do
+  begin
+    if CurrentMonitor = Screen.Monitors[i] then
+    begin
+      result:=i;
+      break;
+    end;
+  end;
+end;
+
+procedure TfrmMain.IdleTimerMouseHideStopTimer(Sender: TObject);
+begin
+  Screen.Cursor:= crDefault;
+  Self.Cursor:=crDefault;
+end;
+
+procedure TfrmMain.IdleTimerMouseHideTimer(Sender: TObject);
+begin
+  //if not FisPopupMenuShowing then
+  //begin
+    Screen.Cursor:= crNone;
+    Self.Cursor:=crNone;
+  //end;
+end;
+
+procedure TfrmMain.RestoreFormState;
+var
+  LastWindowState: TWindowState;
+begin
+  with XMLConfig do
+  begin
+    LastWindowState := TWindowState(GetValue('WindowState', Integer(WindowState)));
+
+    if LastWindowState = wsMaximized then
+    begin
+      WindowState := wsNormal;
+      BoundsRect := Bounds(
+        GetValue('RestoredLeft', RestoredLeft),
+        GetValue('RestoredTop', RestoredTop),
+        GetValue('RestoredWidth', RestoredWidth),
+        GetValue('RestoredHeight', RestoredHeight));
+      WindowState := wsMaximized;
+    end else
+    begin
+      // Somehow, this causes strange behaviour.. fullscreen won't work < when restore in FormShow event. OnCreate is ok.
+      //WindowState := wsNormal;
+      BoundsRect := Bounds(
+        GetValue('NormalLeft', Left),
+        GetValue('NormalTop', Top),
+        GetValue('NormalWidth', Width),
+        GetValue('NormalHeight', Height));
+    end;
+  end;
+end;
+
+procedure TfrmMain.StoreFormState;
+begin
+  // Save form state.
+  with XMLConfig do
+  begin
+    SetValue('WindowState', Integer(WindowState));
+    SetValue('NormalLeft', Left);
+    SetValue('NormalTop', Top);
+    SetValue('NormalWidth', Width);
+    SetValue('NormalHeight', Height);
+    SetValue('RestoredLeft', RestoredLeft);
+    SetValue('RestoredTop', RestoredTop);
+    SetValue('RestoredWidth', RestoredWidth);
+    SetValue('RestoredHeight', RestoredHeight);
+  end;
+end;
+
+procedure TfrmMain.FormClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  self.hide;
+end;
+
+procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+begin
+  StoreFormState;
+
+  // Save options.
+  //XMLConfig.SetValue('/Opts/Random',FOptRandom);
+  //XMLConfig.SetValue('/Opts/Repeat',FOptRepeat);
+  //XMLConfig.SetValue('/Opts/Moniter',FOptIntMoniter);
+  XMLConfig.SetValue('/Opts/MinimulFileSizeKiloByte',FOptMinimulFileSizeKiloByte);
+  //XMLConfig.SetValue('/Opts/StayOnTop',FoptStayOnTop);
+  XMLConfig.SetValue('/Opts/BackgroundBlack',FoptBackgroundBlack);
+  XMLConfig.SetValue('/Opts/IncludeSubFolders',FOptIncludeSubFolders);
+  XMLConfig.SetValue('/Opts/FileExts',widestring(FOptFileExts));
+  XMLConfig.SetValue('/Opts/PlaylistExts',widestring(FOptPlaylistExts));
+  XMLConfig.SetValue('/InitDir/Path',widestring(FstrInitialDir));
+
+end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
@@ -635,8 +878,12 @@ begin
 
   FreeAndNil(cPlayer);
 
+
   FstFileExtList.Free;
+  FstPlaylistExtList.Free;
   FstFileList.Free;
+  FstDirectoryList.Free;
+  FstPlaylistList.Free;
 end;
 
 
