@@ -1,4 +1,4 @@
-program MoviePlayer;
+program VideoPlayer;
 
 {$mode objfpc}{$H+}
 
@@ -10,7 +10,8 @@ uses
   athreads,
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, UMain, MPVBasePlayer, MPVClient, MPVConst, MPVNode, MPVRender,
+  Forms, UMain,
+  MPVBasePlayer, MPVClient, MPVConst, MPVNode, MPVRender,
   MPVStreamCB, MPVTrack;
 
 {$R *.res}

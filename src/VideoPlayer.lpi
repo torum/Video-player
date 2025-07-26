@@ -5,7 +5,7 @@
     <PathDelim Value="\"/>
     <General>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="MoviePlayer"/>
+      <Title Value="VideoPlayer"/>
       <Scaled Value="True"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
@@ -31,7 +31,7 @@
     </RequiredPackages>
     <Units>
       <Unit>
-        <Filename Value="MoviePlayer.lpr"/>
+        <Filename Value="VideoPlayer.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
@@ -80,9 +80,10 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="MoviePlayer"/>
+      <Filename Value="VideoPlayer"/>
     </Target>
     <SearchPaths>
+      <IncludeFiles Value="$(ProjOutDir)"/>
       <OtherUnitFiles Value="libmpv"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>

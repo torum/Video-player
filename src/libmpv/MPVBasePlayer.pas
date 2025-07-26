@@ -2,6 +2,9 @@ unit MPVBasePlayer;
 
 // MPV base player classes
 // Author: Edward G. (nbuyer@gmail.com)
+// https://github.com/nbuyer/libmpvdelphi
+
+
 
 {.$DEFINE MPV_DYNAMIC_LOAD} // should define in project options "Conditional defines"
 
