@@ -1,0 +1,22 @@
+object frmMain: TfrmMain
+  Left = 682
+  Height = 240
+  Top = 37
+  Width = 320
+  Caption = 'Form1'
+  ClientHeight = 240
+  ClientWidth = 320
+  DesignTimePPI = 144
+  LCLVersion = '4.0.0.4'
+  OnCreate = FormCreate
+  object Panel2: TPanel
+    Left = 0
+    Height = 490
+    Top = 0
+    Width = 928
+    Align = alClient
+    BevelOuter = bvNone
+    TabOrder = 0
+    OnDblClick = Panel2DblClick
+  end
+end
