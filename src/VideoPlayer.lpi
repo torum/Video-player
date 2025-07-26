@@ -77,6 +77,18 @@
         <Filename Value="libmpv\MPVTrack.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
+      <Unit>
+        <Filename Value="ushell.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="frmShell"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="UShell"/>
+      </Unit>
+      <Unit>
+        <Filename Value="ushell.lfm"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -90,6 +102,10 @@
       <OtherUnitFiles Value="libmpv"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
+    <CodeGeneration>
+      <TargetCPU Value="x86_64"/>
+      <TargetOS Value="win64"/>
+    </CodeGeneration>
     <Linking>
       <Debugging>
         <DebugInfoType Value="dsDwarf3"/>

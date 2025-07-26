@@ -1,6 +1,9 @@
 unit UMain;
 
-{$mode objfpc}{$H+}
+// EnableBlur procedure requires delphi mode.
+//{$mode objfpc}{$H+}
+{$mode delphi}
+
 interface
 
 uses
@@ -48,7 +51,7 @@ type
     FOptBackgroundBlack:boolean;
     FOptMinimulFileSizeKiloByte:integer; //TODO: need to check if this is even needed.
     FstrInitialDir:string;
-    FiCurrentFileIndex:integer;
+    FintCurrentFileIndex:integer;
     FisSingleFileSelected: boolean;
     FstrInitialSelectedVideoFile:string;
     // App status flags.
@@ -59,18 +62,25 @@ type
     procedure LoadDirectories(const Dirs: TStringList; FList: TStringList);
     procedure LoadSiblings(const FName: string; FList: TStringList);
     procedure LoadVideo;
-    function DispayVideo(filename:string):boolean;
-    procedure ShowFullScreen(blnOn: boolean);
+    function PlayVideo(filename:string):boolean;
+
     procedure SetFullScreen_Universal(blnOn: boolean);
     procedure SetFullScreen_Win32(blnOn: boolean);
     function GetCurrentMonitor():TMonitor;
     function GetCurrentMonitorIndex():integer;
     procedure RestoreFormState;
     procedure StoreFormState;
+    {$ifdef windows}
+    procedure EnableBlur(blon:boolean);
+    {$endif}
   public
-    cPlayer: TMPVBasePlayer;
+    //cPlayer: TMPVBasePlayer;
+    procedure ShowFullScreen(blnOn: boolean);
+    procedure LoadNextVideo;
+    Property IntCurrentFileIndex: integer read FintCurrentFileIndex;
     property FileList: TStringList read FstFileList;
     property CurrentMonitor:TMonitor read GetCurrentMonitor;
+    Property IsFullScreen:boolean read FisFullscreen;
   end;
 
   {$ifdef windows}
@@ -98,6 +108,8 @@ var
 
 implementation
 
+uses
+  UShell;
 
 {$R *.lfm}
 
@@ -106,6 +118,7 @@ implementation
 procedure TfrmMain.FormCreate(Sender: TObject);
 var
   configFile:string;
+  errcode:integer;
 begin
 
   self.Caption := 'Movie Player';
@@ -126,7 +139,7 @@ begin
   FstPlaylistExtList.Delimiter:=';';
   FstPlaylistExtList.DelimitedText:=FOptPlaylistExts;
 
-  FiCurrentFileIndex:=0;
+  FintCurrentFileIndex:=0;
   FstrInitialSelectedVideoFile :='';
   // Be carefull when settings this. If the size is too large, the list will be empty.
   FOptMinimulFileSizeKiloByte:=1;
@@ -168,11 +181,13 @@ begin
   begin
      RestoreFormState;
   end;
-
+   {
   // Init player.
   cPlayer := TMPVBasePlayer.Create;
   cPlayer.InitPlayer(IntToStr(self.Handle), '', '', '');
-
+  errcode := cPlayer.SetHardwareDecoding('yes');
+  //outputdebugstring(pchar(errcode.ToString));
+  }
 end;
 
 procedure TfrmMain.FormActivate(Sender: TObject);
@@ -183,12 +198,15 @@ end;
 procedure TfrmMain.FormShow(Sender: TObject);
 begin
 
-
-{$ifdef windows}
+  {$ifdef windows}
   // Apply dark themed title bar.
   // https://forum.lazarus.freepascal.org/index.php/topic,59172.msg441116.html
-  ApplyFormDarkTitle(self, FoptBackgroundBlack, true);
-{$endif}
+  ApplyFormDarkTitle(self, true, true);
+  {$endif}
+
+  frmShell := TfrmShell.create(self);
+  frmShell.Parent := self;
+  frmShell.Show;
 
 end;
 
@@ -368,7 +386,7 @@ begin
 
   if TmpFileList.Count <> 0 then
   begin
-    FiCurrentFileIndex:=0;
+    FintCurrentFileIndex:=0;
 
     fisSingleFileSelected := isSingleFSelected;
     fstrInitialSelectedVideoFile := strInitialSelectedImageFile;
@@ -381,10 +399,10 @@ begin
       newCurrentIndex:=FstFileList.indexOf(FstrInitialSelectedVideoFile);
       if (newCurrentIndex > -1) then
       begin
-        FiCurrentFileIndex:=newCurrentIndex;
+        FintCurrentFileIndex:=newCurrentIndex;
       end else
       begin
-        FiCurrentFileIndex:=0;
+        FintCurrentFileIndex:=0;
       end;
     end;
     LoadVideo;
@@ -397,6 +415,23 @@ begin
   TmpPlayList.Free;
 end;
 
+procedure TfrmMain.LoadNextVideo;
+begin
+  if FstFileList.Count > 0 then
+  begin
+    if (FstFileList.Count > FintCurrentFileIndex+1) then
+    begin
+      FintCurrentFileIndex := FintCurrentFileIndex+1;
+    end else
+    begin
+      FintCurrentFileIndex := 0;
+    end;
+
+    LoadVideo;
+  end;
+
+end;
+
 procedure TfrmMain.LoadVideo;
 var
   strPath:string;
@@ -404,24 +439,28 @@ begin
   if FileList.Count > 0 then
   begin
 
-    strPath := MinimizeName(FileList[FiCurrentFileIndex],Self.Canvas, self.width - 300);
+    strPath := MinimizeName(FileList[FintCurrentFileIndex],Self.Canvas, self.width - 300);
 
     if (FileList.Count = 1) then
     begin
       Self.Caption:=strPath;
     end else
     begin
-      Self.Caption:='['+intToStr(FiCurrentFileIndex+1)+'/'+ intToStr(FileList.Count) +'] ' + strPath;
+      Self.Caption:='['+intToStr(FintCurrentFileIndex+1)+'/'+ intToStr(FileList.Count) +'] ' + strPath;
     end;
 
-    DispayVideo(FileList[FiCurrentFileIndex]);
+    PlayVideo(FileList[FintCurrentFileIndex]);
   end;
 end;
 
-function TfrmMain.DispayVideo(filename:string):boolean;
+function TfrmMain.PlayVideo(filename:string):boolean;
 begin
   try
-    cPlayer.OpenFile(filename);
+
+    frmShell.Player.OpenFile(filename);
+
+    //outputdebugstring(pchar('mpsPlay height:'+frmShell.Player.VideoHeight.ToString + ' width:'+frmShell.Player.VideoWidth.ToString));
+
     result:=true;
   except
     on E: Exception do
@@ -479,27 +518,55 @@ begin
 
   //Player
 
-  plState := cPlayer.GetState;
+  plState := frmShell.Player.GetState;
 
   // Pause/Start
   if (Key = VK_PAUSE) or (Key = VK_SPACE) then
   begin
     if (plState = TMPVPlayerState.mpsPlay) then
-    begin
-      cPlayer.Pause;
+    begin             
+      //outputdebugstring(pchar('TMPVPlayerState.mpsPlay'));
+      frmShell.Player.Pause;
     end
     else if (plState = TMPVPlayerState.mpsPause) then
-    begin
-      cPlayer.Resume;
+    begin                   
+      //outputdebugstring(pchar('TMPVPlayerState.mpsPause'));
+      frmShell.Player.Resume;
     end
     else if (plState = TMPVPlayerState.mpsStop) then // TODO: need to check.
     begin
-      //outputdebugstring(pchar('mpsStop'));
+      //outputdebugstring(pchar('TMPVPlayerState.mpsStop'));
+      // do nothing. probably closing.
+    end
+    else if (plState = TMPVPlayerState.mpsEnd) then
+    begin
       if (FileList.Count > 0) then
       begin
-        DispayVideo(FileList[0]);
+        // TODO: check auto next mode.
+        LoadNextVideo;
         //outputdebugstring(pchar(FileList[0]));
+      end else
+      begin
+        //outputdebugstring(pchar('FileList.Count = 0'));
       end;
+    end
+    else if (plState = TMPVPlayerState.mpsUnk) then
+    begin
+      //outputdebugstring(pchar('TMPVPlayerState.mpsUnk'));
+    end
+    else if (plState = TMPVPlayerState.mpsErr) then
+    begin
+      //outputdebugstring(pchar('TMPVPlayerState.mpsErr'));
+    end
+    else if (plState = TMPVPlayerState.mpsStep) then
+    begin
+      //outputdebugstring(pchar('TMPVPlayerState.mpsStep'));
+    end else if (plState = TMPVPlayerState.mpsLoading) then
+    begin
+      //outputdebugstring(pchar('TMPVPlayerState.mpsLoading'));
+    end else
+    begin
+      //outputdebugstring(pchar('TMPVPlayerState else'));
     end;
   end;
 
@@ -511,10 +578,10 @@ begin
     begin
       if (ssCtrl in Shift) then
       begin
-        cPlayer.Seek(100,true);
+        frmShell.Player.Seek(100,true);
       end else
       begin
-        cPlayer.Seek(10,true);
+        frmShell.Player.Seek(10,true);
       end;
     end;
 
@@ -523,37 +590,37 @@ begin
     begin
       if (ssCtrl in Shift) then
       begin
-        cPlayer.Seek(-100,true);
+        frmShell.Player.Seek(-100,true);
       end else
       begin
-        cPlayer.Seek(-10,true);
+        frmShell.Player.Seek(-10,true);
       end;
     end;
 
     // Volume
     if (Key = VK_UP) then
     begin
-      curVol := cPlayer.GetVolume;
+      curVol := frmShell.Player.GetVolume;
 
       if (ssCtrl in Shift) then
       begin
-        cPlayer.SetVolume(curVol+10);
+        frmShell.Player.SetVolume(curVol+10);
       end else
       begin
-        cPlayer.SetVolume(curVol+5);
+        frmShell.Player.SetVolume(curVol+5);
       end;
     end;
 
     if (Key = VK_DOWN) then
     begin
-      curVol := cPlayer.GetVolume;
+      curVol := frmShell.Player.GetVolume;
 
       if (ssCtrl in Shift) then
       begin
-        cPlayer.SetVolume(curVol-10);
+        frmShell.Player.SetVolume(curVol-10);
       end else
       begin
-        cPlayer.SetVolume(curVol-5);
+        frmShell.Player.SetVolume(curVol-5);
       end;
     end;
 
@@ -716,17 +783,24 @@ begin
       FintOldWndStyle:= GetWindowLong(handle,GWL_STYLE);      // 3
       FintOldExWndStyle:= GetWindowLong(handle,GWL_EXSTYLE);  // 4
 
-      self.Visible:=false;
-
       //SetWindowLong(Handle, GWL_STYLE, WS_POPUP or WS_CLIPSIBLINGS or WS_CLIPCHILDREN or WS_SYSMENU); < deprecated
       SetWindowLongPtr(Handle, GWL_STYLE, LONG_PTR(WS_POPUP or WS_CLIPSIBLINGS or WS_CLIPCHILDREN or WS_SYSMENU)); // 5
-      SetWindowLongPtr(Handle, GWL_EXSTYLE, WS_EX_CONTROLPARENT or WS_EX_APPWINDOW);                     // 6
-
+      SetWindowLongPtr(Handle, GWL_EXSTYLE, WS_EX_CONTROLPARENT or WS_EX_APPWINDOW or WS_EX_ACCEPTFILES);          // 6
 
       WindowState:= wsFullScreen; // 7
       //BoundsRect:= CurrentMonitor.BoundsRect;
-      self.Visible:=true;
+
       // Must be this order til here.
+
+      {$ifdef windows}
+      // Background blur when background color is set to clBlack.
+      if (Win32MajorVersion>=10) then
+      begin
+        self.color := clBlack; // Temp set to black
+        DoubleBuffered := True;
+        EnableBlur(true); // TODO: make this an option.
+      end;
+     {$endif}
 
     end;
 
@@ -749,6 +823,16 @@ begin
         BoundsRect:= FOrigBounds;
       end;
     end;
+
+    {$ifdef windows}
+    // Background blur when background color is set to clBlack.
+    if (Win32MajorVersion>=10) then
+    begin
+      self.color := clBlack; // Temp set to black
+      DoubleBuffered := True;
+      EnableBlur(false); // TODO: make this an option.
+    end;
+   {$endif}
 
     //ShowWindow(Handle, SW_SHOWNORMAL);
     SetFocus;
@@ -872,12 +956,12 @@ end;
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   // Clean up
-
+  {
   if cPlayer <> nil then
     cPlayer.Stop;
 
   FreeAndNil(cPlayer);
-
+  }
 
   FstFileExtList.Free;
   FstPlaylistExtList.Free;
@@ -886,6 +970,65 @@ begin
   FstPlaylistList.Free;
 end;
 
+{$ifdef windows}
+// requires delphi mode.
+// https://wiki.lazarus.freepascal.org/Aero_Glass
+procedure TfrmMain.EnableBlur(blon:boolean);
+const
+  WCA_ACCENT_POLICY = 19;
+  ACCENT_ENABLE_BLURBEHIND = 3;
+  //ACCENT_ENABLE_ACRYLICBLURBEHIND = 4; // Windows 10 April 2018 Update
+  ACCENT_DISABLED = 0;
+  DrawLeftBorder = $20;
+  DrawTopBorder = $40;
+  DrawRightBorder = $80;
+  DrawBottomBorder = $100;
+var
+  dwm10: THandle;
+  data : TWinCompAttrData;
+  accent: AccentPolicy;
+begin
+  //require Windows 10
+  if Win32MajorVersion<10 then exit;
+
+  dwm10 := LoadLibrary('user32.dll');
+  try
+    @SetWindowCompositionAttribute := GetProcAddress(dwm10, 'SetWindowCompositionAttribute');
+    if @SetWindowCompositionAttribute <> nil then
+    begin
+      if (blon) then
+      begin
+        accent.AccentState := ACCENT_ENABLE_BLURBEHIND;
+      end else
+      begin
+        accent.AccentState := ACCENT_DISABLED;
+      end;
+      //accent.AccentState := ACCENT_ENABLE_BLURBEHIND;
+      ////accent.AccentState := ACCENT_ENABLE_ACRYLICBLURBEHIND;
+      //accent.GradientColor := (100 SHL 24) or (clBlue);
+      accent.AccentFlags := DrawLeftBorder or DrawTopBorder or DrawRightBorder or DrawBottomBorder;
+
+      data.Attribute := WCA_ACCENT_POLICY;
+      data.dataSize := SizeOf(accent);
+      data.pData := @accent;
+      SetWindowCompositionAttribute(self.Handle, data);
+
+    end
+    else
+    begin
+      //ShowMessage('Not found Windows 10 blur API');
+    end;
+  finally
+    FreeLibrary(dwm10);
+  end;
+
+end;
+{$endif}
+
+{$ifdef windows}
+initialization
+  SetWindowCompositionAttribute := GetProcAddress(GetModuleHandle(user32), 'SetWindowCompositionAttribute');
+{$endif}
 
 end.
 

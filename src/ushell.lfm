@@ -1,0 +1,16 @@
+object frmShell: TfrmShell
+  Left = 514
+  Height = 547
+  Top = 37
+  Width = 690
+  Align = alClient
+  AllowDropFiles = True
+  BorderStyle = bsNone
+  DesignTimePPI = 144
+  OnCreate = FormCreate
+  OnDblClick = FormDblClick
+  OnDestroy = FormDestroy
+  OnDropFiles = FormDropFiles
+  OnKeyDown = FormKeyDown
+  OnShow = FormShow
+end

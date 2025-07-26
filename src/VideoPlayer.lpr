@@ -10,7 +10,7 @@ uses
   athreads,
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, UMain,
+  Forms, UMain, UShell,
   MPVBasePlayer, MPVClient, MPVConst, MPVNode, MPVRender,
   MPVStreamCB, MPVTrack;
 
@@ -24,6 +24,7 @@ begin
   {$POP}
   Application.Initialize;
   Application.CreateForm(TfrmMain, frmMain);
+  //Application.CreateForm(TfrmBackground, frmBackground);
   Application.Run;
 end.
 
