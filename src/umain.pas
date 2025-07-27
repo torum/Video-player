@@ -50,10 +50,13 @@ type
     FOptIncludeSubFolders:boolean;
     FOptBackgroundBlack:boolean;
     FOptMinimulFileSizeKiloByte:integer; //TODO: need to check if this is even needed.
+
+
     FstrInitialDir:string;
     FintCurrentFileIndex:integer;
     FisSingleFileSelected: boolean;
     FstrInitialSelectedVideoFile:string;
+
     // App status flags.
     FisFullScreen: boolean;
     FOrigBounds: TRect;
@@ -119,6 +122,8 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 var
   configFile:string;
   errcode:integer;
+  i:integer;
+  f:int64;
 begin
 
   self.Caption := 'Movie Player';
@@ -128,7 +133,7 @@ begin
   FstPlaylistList:=TstringList.Create;
 
   FOptBackgroundBlack:=true;
-  FOptFileExts:='.mp4;.mkv;.avi;.mpeg;.wmv;';
+  FOptFileExts:='.mp4;.mkv;.avi;.mpeg;.wmv';
   FOptPlaylistExts:='.m3u;.xspf';
 
   FstFileExtList := TStringList.Create;
@@ -168,6 +173,15 @@ begin
     {$endif}
   end;
 
+  FstrInitialDir := string(XMLConfig.GetValue('/InitDir/Path',widestring(FstrInitialDir)));
+  {$ifdef windows}
+  if not (DirectoryExists(FstrInitialDir)) then
+  begin
+     FstrInitialDir := GetWindowsSpecialDir(CSIDL_MYVIDEO);
+  end;
+  {$endif}
+
+  FoptBackgroundBlack := XMLConfig.GetValue('/Opts/BackgroundBlack',FoptBackgroundBlack);
   if (FOptBackgroundBlack) then
   begin
     self.Color:=clBlack;
@@ -181,6 +195,147 @@ begin
   begin
      RestoreFormState;
   end;
+
+
+
+  // TODO: skip command line parameters for now.
+
+  // Parse other prameters.
+  for i := 1 to ParamCount do
+  begin
+    if (AnsiStartsStr('-',ParamStr(I))) then
+    begin
+      // Options. has been taken cared of already above.
+    end else if (FileExists(ParamStr(I))) then
+    begin
+      // Found a file
+      {$ifdef windows}
+      {$else}
+      // On UNIX, a directory is also a file.
+      if (DirectoryExists(ParamStr(I))) then begin
+        // Found a folder
+        if not (AnsiStartsStr('.',ExtractFilename(ParamStr(I)))) then
+        begin
+          FstDirectoryList.Add(ParamStr(I));
+        end;
+        Continue;
+      end;
+      {$endif}
+      if (FstFileExtList.IndexOf(LowerCase(ExtractFileExt(ParamStr(I)))) >= 0) then
+      begin
+        // Is a picture file.
+        // MacOS has a bad habit of leaving garbages like this. So, skipping files start with ".".
+        if not (AnsiStartsStr('.',ExtractFilename(ParamStr(I)))) then
+        begin
+          f:= FileSize(ParamStr(I));
+          // Check file size.
+          if f >= (FOptMinimulFileSizeKiloByte) then
+          begin
+            FstFileList.Add(ParamStr(I));
+
+            FstrInitialSelectedVideoFile := ParamStr(I);
+          end;
+        end;
+      end else if (FstPlaylistExtList.IndexOf(LowerCase(ExtractFileExt(ParamStr(I)))) >= 0) then
+      begin
+        // Found a playlist
+        FstPlaylistList.Add(ParamStr(I));
+      end;
+    {$ifdef windows}
+    end else if (DirectoryExists(ParamStr(I))) then
+    begin
+      // Found a folder.
+      // MacOS has a bad habit of leaving garbages like this. So, skipping files start with ".".
+      if not (AnsiStartsStr('.',ExtractFilename(ParamStr(I)))) then
+      begin
+        FstDirectoryList.Add(ParamStr(I));
+      end;
+    end else if (ParamStr(I) = '*') then
+    begin
+      // * option. Pretty much the same as "./"
+      // MacOS has a bad habit of leaving garbages like this. So, skipping files start with ".".
+      if not (AnsiStartsStr('.',ExtractFilename(GetCurrentDir))) then
+      begin
+        FstDirectoryList.Add(GetCurrentDir);
+      end;
+    {$endif}
+    end;
+  end;
+
+  // sort
+  //FstFileList.Sort;
+
+  // Search inside folder(s)
+  LoadDirectories(FstDirectoryList, FstFileList);
+
+  {
+  if ((FstFileList.Count < 1) and (FstrInitialSelectedVideoFile = '')) then
+  begin
+    // No files are provided in the parameter string, so open "file open" dialog.
+
+    // Sets default dir
+    OpenPictureDialog1.InitialDir:=FstrInitialDir;
+    // Sets title
+    OpenPictureDialog1.Title:=ReplaceStr(ExtractFileName(ParamStr(0)),ExtractFileExt(ParamStr(0)),'')+' - ' + resstrOpenPictures;
+    // Open dialog
+    if OpenPictureDialog1.Execute then
+    begin
+      for i:=0 to OpenPictureDialog1.Files.Count -1 do
+      begin
+        if (FstFileExtList.IndexOf(LowerCase(ExtractFileExt(OpenPictureDialog1.Files[i]))) >= 0) then
+        begin
+          // MacOS has a bad habit of leaving garbages like this. So, skipping files start with ".".
+          if not (AnsiStartsStr('.',ExtractFilename(OpenPictureDialog1.Files[i]))) then
+          begin
+            f:= FileSize(OpenPictureDialog1.Files[i]);
+            // Check file size.
+            if f >= (FOptMinimulFileSizeKiloByte) then
+            begin
+              //FstFileList.Add(OpenPictureDialog1.Files[i]);
+              if (i=0) then
+              begin
+                FstrInitialSelectedVideFile:=OpenPictureDialog1.Files[i];
+                // sets init dir for next time.
+                FstrInitialDir := ExtractFilePath(OpenPictureDialog1.Files[i]);
+              end;
+              FstFileList.Add(OpenPictureDialog1.Files[i]);
+            end;
+          end;
+        end else if (FstPlaylistExtList.IndexOf(LowerCase(ExtractFileExt(OpenPictureDialog1.Files[i]))) >= 0) then
+        begin
+          // playlist.
+          FstPlaylistList.Add(OpenPictureDialog1.Files[i]);
+        end;
+      end;
+
+      // sort
+      FstFileList.Sort;
+    end;
+  end;
+  }
+
+  // If only one image was selected, add all siblings automatically.
+  // "send to" command-line parameters don't accept more than 255.
+  if ((FstFileList.Count = 1) and (FstrInitialSelectedVideoFile <> '')) then
+  begin
+    LoadSiblings(FstFileList[0], FstFileList);
+
+    //if (FstFileList.count = 0) then
+    //   FstFileList.Add(FstrInitialSelectedImageFile);
+
+    // Since automatically added, do not start slideshow at fullscreen later.
+    FisSingleFileSelected:=true;
+  end;
+
+  if (FstFileList.indexOf(FstrInitialSelectedVideoFile) > -1) then
+  begin
+    FintCurrentFileIndex:=FstFileList.indexof(FstrInitialSelectedVideoFile);
+  end else
+  begin
+    // Start with 0
+    FintCurrentFileIndex:=0;
+  end;
+
    {
   // Init player.
   cPlayer := TMPVBasePlayer.Create;
@@ -208,11 +363,18 @@ begin
   frmShell.Parent := self;
   frmShell.Show;
 
+  // Need to be here. not in the OnCreate.
+  if (FstFileList.Count> 0) then
+  begin
+    LoadVideo;
+  end;
+
 end;
 
 procedure TfrmMain.LoadDirectories(const Dirs: TStringList; FList: TStringList);
 var
-  i,j,f:integer;
+  f:int64;
+  i,j:integer;
   fileSearchMask:string;
   folderfiles:TStringlist;
 begin
@@ -259,7 +421,8 @@ end;
 
 procedure TfrmMain.LoadSiblings(const FName: string; FList: TStringList);
 var
-  i,j,f:integer;
+  f:int64;
+  i,j:integer;
   fileSearchMask, fileFolder:string;
   folderfiles:TStringlist;
 begin
@@ -316,7 +479,8 @@ end;
 procedure TfrmMain.FormDropFiles(Sender: TObject;
   const FileNames: array of string);
 var
-  i,f,newCurrentIndex:integer;
+  f:int64;
+  i,newCurrentIndex:integer;
   FName, strInitialSelectedImageFile:string;
   TmpFileList, TmpDirList, TmpPlayList:TStringList;
   isSingleFSelected:boolean;
@@ -345,13 +509,11 @@ begin
         // MacOS has a bad habit of leaving garbages like this. So, skipping files start with ".".
         if not (AnsiStartsStr('.',ExtractFilename(FName))) then
         begin
-
           f:= FileSize(FName);
           // Check file size.
           if f >= (FOptMinimulFileSizeKiloByte) then
           begin
             TmpFileList.Add(FName);
-
             strInitialSelectedImageFile := FName;
           end;
         end;
@@ -454,17 +616,24 @@ begin
 end;
 
 function TfrmMain.PlayVideo(filename:string):boolean;
+var
+  errcode:integer;
 begin
   try
-
-    frmShell.Player.OpenFile(filename);
-
-    //outputdebugstring(pchar('mpsPlay height:'+frmShell.Player.VideoHeight.ToString + ' width:'+frmShell.Player.VideoWidth.ToString));
-
-    result:=true;
+    errcode := frmShell.Player.OpenFile(filename);
+    if (errcode <> 0) then
+    begin
+      Self.Caption := filename + ' is not playing.' + ' errcode: ' + errcode.ToString;
+      result:=false;
+    end else
+    begin
+      result:=true;
+    end;
   except
     on E: Exception do
     begin
+      Self.Caption := 'Exception: ' + E.ClassName +' - '+ E.Message + ' ' + filename + ' is not playing.';
+      {
       with Canvas do
         begin
           Brush.Style := bsClear;
@@ -472,6 +641,7 @@ begin
           TextOut(24,24, 'File load error: ' + E.ClassName +' - '+ E.Message );
           TextOut(24,52, 'File: ' + filename);
       end;
+      }
       result:=false;
     end;
   end;
@@ -971,9 +1141,9 @@ begin
 end;
 
 {$ifdef windows}
+procedure TfrmMain.EnableBlur(blon:boolean);
 // requires delphi mode.
 // https://wiki.lazarus.freepascal.org/Aero_Glass
-procedure TfrmMain.EnableBlur(blon:boolean);
 const
   WCA_ACCENT_POLICY = 19;
   ACCENT_ENABLE_BLURBEHIND = 3;

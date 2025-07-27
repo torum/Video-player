@@ -24,7 +24,6 @@ begin
   {$POP}
   Application.Initialize;
   Application.CreateForm(TfrmMain, frmMain);
-  //Application.CreateForm(TfrmBackground, frmBackground);
   Application.Run;
 end.
 

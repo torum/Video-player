@@ -6,6 +6,7 @@ object frmShell: TfrmShell
   Align = alClient
   AllowDropFiles = True
   BorderStyle = bsNone
+  Color = clBlack
   DesignTimePPI = 144
   OnCreate = FormCreate
   OnDblClick = FormDblClick

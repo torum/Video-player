@@ -115,6 +115,9 @@ begin
     frmMain.width := plWidth;
     }
 
+    // Manual
+    // TODO:
+
   end else if (eState = TMPVPlayerState.mpsLoading) then
   begin
     //outputdebugstring(pchar('mpsLoading height:'+Player.VideoHeight.ToString + ' width:'+Player.VideoWidth.ToString));
