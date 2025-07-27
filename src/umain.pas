@@ -425,6 +425,11 @@ begin
   Player.SetPropertyString('config', 'yes');
   //Player.SetPropertyString('input-conf', GetAppConfigDir(false)+'input.conf');
 
+  //
+  Player.SetPropertyString('osd-font-size', '16');
+  //this isn't it. Player.SetPropertyString('osd-outline-size', '0'); //Default: 1.65
+
+
   // Subscribing to status change event
   Player.OnStateChged := @PlayerStatusChanged; // @PlayerStatusChanged if objectpascal mode, PlayerStatusChanged for delphi.
 
@@ -470,7 +475,7 @@ begin
   end
   else if (eState = TMPVPlayerState.mpsEnd) then
   begin
-    outputdebugstring(pchar('mpsEnd'));
+    //outputdebugstring(pchar('mpsEnd'));
     // We don't know if this "End" is just finished the video or closing down the app. Need to check that or else we get AV.
     //frmMain.LoadNextVideo;
   end;
@@ -1131,7 +1136,7 @@ begin
     end;
   end;
 end;
-
+{$ifdef windows}
 procedure TfrmMain.SetFullScreen_Win32(blnOn: boolean);
 begin
   // Do not use "BorderStyle:= bsSizeable;" or self.Parent:=nil;
@@ -1156,8 +1161,6 @@ begin
       //BoundsRect:= CurrentMonitor.BoundsRect;
 
       // Must be this order til here.
-
-      {$ifdef windows}
       {
       // Background blur when background color is set to clBlack.
       if (Win32MajorVersion>=10) then
@@ -1167,7 +1170,7 @@ begin
         EnableBlur(true); // TODO: make this an option.
       end;
       }
-     {$endif}
+
 
     end;
 
@@ -1179,6 +1182,7 @@ begin
   begin
     if FisFullScreen then
     begin
+
       SetWindowLongPtr(handle, GWL_STYLE, FintOldWndStyle);
       SetWindowLongPtr(handle, GWL_EXSTYLE, FintOldExWndStyle);
 
@@ -1190,7 +1194,7 @@ begin
       end;
     end;
 
-    {$ifdef windows}
+
     {
     // Background blur when background color is set to clBlack.
     if (Win32MajorVersion>=10) then
@@ -1200,7 +1204,7 @@ begin
       EnableBlur(false); // TODO: make this an option.
     end;
     }
-   {$endif}
+
 
     //ShowWindow(Handle, SW_SHOWNORMAL);
     SetFocus;
@@ -1208,7 +1212,7 @@ begin
     SetForegroundWindow(handle);
   end;
 end;
-
+{$endif}
 function TfrmMain.GetCurrentMonitor():TMonitor;
 begin
   if not Assigned(FCurrentMonitor) then

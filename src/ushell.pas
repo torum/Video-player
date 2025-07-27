@@ -59,14 +59,14 @@ end;
 
 procedure TfrmShell.Button1Click(Sender: TObject);
 begin
-  Outputdebugstring(pchar('TfrmShell.Button1Click'));
+  //Outputdebugstring(pchar('TfrmShell.Button1Click'));
 end;
 
 procedure TfrmShell.Button1KeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
   // Somehow this button steals all the key down events...
-  Outputdebugstring(pchar('TfrmShell.Button1KeyDown'));
+  //Outputdebugstring(pchar('TfrmShell.Button1KeyDown'));
   frmMain.FormKeyDown(self,Key,Shift);
 end;
 
@@ -79,7 +79,7 @@ procedure TfrmShell.TrackBarVolumeKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
   // Somehow this TrackBar steals all the key down events...
-  Outputdebugstring(pchar('TfrmShell.TrackBarVolumeKeyDown'));
+  //Outputdebugstring(pchar('TfrmShell.TrackBarVolumeKeyDown'));
   frmMain.FormKeyDown(self,Key,Shift);
 end;
 
@@ -93,7 +93,7 @@ procedure TfrmShell.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
   // Button1 stole all the key down events..
-  Outputdebugstring(pchar('TfrmShell.FormKeyDown'));
+  //Outputdebugstring(pchar('TfrmShell.FormKeyDown'));
   frmMain.FormKeyDown(self,Key,Shift);
 end;
 
