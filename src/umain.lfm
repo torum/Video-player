@@ -17,6 +17,7 @@ object frmMain: TfrmMain
   OnMouseDown = FormMouseDown
   OnMouseMove = FormMouseMove
   OnMouseUp = FormMouseUp
+  OnMouseWheel = FormMouseWheel
   OnShow = FormShow
   object XMLConfig: TXMLConfig
     StartEmpty = False
@@ -36,5 +37,12 @@ object frmMain: TfrmMain
   object PopupMenu1: TPopupMenu
     Left = 56
     Top = 200
+  end
+  object IdleTimerOverlayControlsHide: TIdleTimer
+    AutoEnabled = True
+    Interval = 1800
+    OnTimer = IdleTimerOverlayControlsHideTimer
+    Left = 248
+    Top = 40
   end
 end

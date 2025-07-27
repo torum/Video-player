@@ -6,8 +6,9 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Menus, StdCtrls,
+  ComCtrls,
   {$ifdef windows}Windows, DWMApi, windirs, win32titlestyler,{$endif}
-  MPVBasePlayer;
+  MPVBasePlayer, Types;
 
 type
 
@@ -15,6 +16,7 @@ type
 
   TfrmShell = class(TForm)
     Button1: TButton;
+    TrackBarVolume: TTrackBar;
     procedure Button1Click(Sender: TObject);
     procedure Button1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState
       );
@@ -29,6 +31,8 @@ type
     procedure FormMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure FormShow(Sender: TObject);
+    procedure TrackBarVolumeKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
   private
     FPos: TPoint;
     FisMouseDown: boolean;
@@ -71,6 +75,14 @@ begin
 
 end;
 
+procedure TfrmShell.TrackBarVolumeKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  // Somehow this TrackBar steals all the key down events...
+  Outputdebugstring(pchar('TfrmShell.TrackBarVolumeKeyDown'));
+  frmMain.FormKeyDown(self,Key,Shift);
+end;
+
 procedure TfrmShell.FormDropFiles(Sender: TObject;
   const FileNames: array of string);
 begin
@@ -108,6 +120,10 @@ begin
       FPos.X:=X;
       FPos.Y:=Y;
       FisMouseDown:=true;
+    end;
+    mbRight: begin
+      //  Right click show controls.
+      frmMain.ShowOverlayControls();
     end;
   end;
 end;

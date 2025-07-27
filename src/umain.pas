@@ -20,6 +20,7 @@ type
 
   TfrmMain = class(TForm)
     IdleTimerMouseHide: TIdleTimer;
+    IdleTimerOverlayControlsHide: TIdleTimer;
     PopupMenu1: TPopupMenu;
     XMLConfig: TXMLConfig;
     procedure FormActivate(Sender: TObject);
@@ -35,9 +36,12 @@ type
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FormMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure FormShow(Sender: TObject);
     procedure IdleTimerMouseHideStopTimer(Sender: TObject);
     procedure IdleTimerMouseHideTimer(Sender: TObject);
+    procedure IdleTimerOverlayControlsHideTimer(Sender: TObject);
 
   private
     // Main file lists
@@ -74,6 +78,10 @@ type
     FPos: TPoint;
     FisMouseDown: boolean;
     FisMoving: boolean;
+
+    //
+    FintAlphaBlendValue:integer;
+
     procedure PlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
     procedure LoadDirectories(const Dirs: TStringList; FList: TStringList);
     procedure LoadSiblings(const FName: string; FList: TStringList);
@@ -88,6 +96,7 @@ type
     procedure StoreFormState;
     procedure ParsePramsAndBuildFileList; 
     procedure LoadSettings;
+
     {$ifdef windows}
     //procedure EnableBlur(blon:boolean);
     {$endif}
@@ -95,10 +104,12 @@ type
     Player: TMPVBasePlayer;
     procedure ShowFullScreen(blnOn: boolean);
     procedure LoadNextVideo;
+    procedure ShowOverlayControls;
     Property IntCurrentFileIndex: integer read FintCurrentFileIndex;
     property FileList: TStringList read FstFileList;
     property CurrentMonitor:TMonitor read GetCurrentMonitor;
     Property IsFullScreen:boolean read FisFullscreen;
+    Property IntAlphaBlendValue:integer read FintAlphaBlendValue;
   end;
 
   {$ifdef windows}
@@ -167,6 +178,8 @@ begin
   // TODO:
   FstrInitialDir := '';
   {$endif}
+
+  FintAlphaBlendValue := 20;
 
   // Load settings
   LoadSettings();
@@ -755,9 +768,6 @@ begin
     if (FisFullscreen) then
     begin
       ShowFullScreen(false);
-    end else
-    begin
-      //ShowFullScreen(true);
     end;
     exit;
   end;
@@ -784,9 +794,10 @@ begin
 
   //Player
 
+  // Check player status.
   plState := Player.GetState;
 
-  // Pause/Start
+  // Pause, resume or Start
   if (Key = VK_PAUSE) or (Key = VK_SPACE) or (Chr(Key) = 'P') then
   begin
     if (plState = TMPVPlayerState.mpsPlay) then
@@ -806,6 +817,7 @@ begin
     end
     else if (plState = TMPVPlayerState.mpsEnd) then
     begin
+      // TODO: mpsEnd is also fired when closing? need to check.
       if (FileList.Count > 0) then
       begin
         // TODO: check auto next mode.
@@ -815,7 +827,8 @@ begin
       begin
         //outputdebugstring(pchar('FileList.Count = 0'));
       end;
-    end
+    end;
+    {
     else if (plState = TMPVPlayerState.mpsUnk) then
     begin
       //outputdebugstring(pchar('TMPVPlayerState.mpsUnk'));
@@ -834,8 +847,45 @@ begin
     begin
       //outputdebugstring(pchar('TMPVPlayerState else'));
     end;
+    }
   end;
 
+  // Volume (can set if player is not playing)
+  // UP
+  if (Key = VK_UP) then
+  begin
+    curVol := Player.GetVolume;
+    if (ssCtrl in Shift) then
+    begin
+      Player.SetVolume(curVol+10);
+      frmShell.TrackBarVolume.Position:=Trunc(curVol)+10;
+    end else
+    begin
+      Player.SetVolume(curVol+5);
+      frmShell.TrackBarVolume.Position:=Trunc(curVol)+5;
+    end;
+    // Show controls
+    ShowOverlayControls();
+  end;
+  // Down
+  if (Key = VK_DOWN) then
+  begin
+    curVol := Player.GetVolume;
+    if (ssCtrl in Shift) then
+    begin
+      Player.SetVolume(curVol-10);
+      frmShell.TrackBarVolume.Position:=Trunc(curVol)-10;
+    end else
+    begin
+      Player.SetVolume(curVol-5);
+      frmShell.TrackBarVolume.Position:=Trunc(curVol)-5;
+    end;
+    // Show controls
+    ShowOverlayControls();
+  end;
+
+
+  // Only if player is playing something.
   if (plState = TMPVPlayerState.mpsPlay) then
   begin
 
@@ -863,32 +913,6 @@ begin
       end;
     end;
 
-    // Volume
-    if (Key = VK_UP) then
-    begin
-      curVol := Player.GetVolume;
-
-      if (ssCtrl in Shift) then
-      begin
-        Player.SetVolume(curVol+10);
-      end else
-      begin
-        Player.SetVolume(curVol+5);
-      end;
-    end;
-
-    if (Key = VK_DOWN) then
-    begin
-      curVol := Player.GetVolume;
-
-      if (ssCtrl in Shift) then
-      begin
-        Player.SetVolume(curVol-10);
-      end else
-      begin
-        Player.SetVolume(curVol-5);
-      end;
-    end;
 
   end;
         {
@@ -952,7 +976,26 @@ begin
       FPos.Y:=Y;
       FisMouseDown:=true;
     end;
+    mbRight: begin
+      // Right click show controls.
+      ShowOverlayControls();
+    end;
   end;
+end;
+
+procedure TfrmMain.ShowOverlayControls();
+var
+  curVol:double;
+begin
+  // Update volume value
+  curVol := Player.GetVolume;
+  frmShell.TrackBarVolume.Position:=Trunc(curVol);
+
+  // Make visible
+  frmShell.AlphaBlendValue:=FintAlphaBlendValue;
+
+  // needed this.
+  frmShell.Repaint;
 end;
 
 procedure TfrmMain.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -974,6 +1017,26 @@ begin
   FisMouseDown:=false;
   FisMoving:=False;
 
+end;
+
+procedure TfrmMain.FormMouseWheel(Sender: TObject; Shift: TShiftState;
+  WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+var
+  curVol:double;
+  newVol:integer;
+begin
+  //outputdebugstring(pchar(WheelDelta.ToString));
+
+  curVol := Player.GetVolume;
+
+  newVol := WheelDelta div 10;
+  newVol := newVol div 2;
+  //Outputdebugstring(pchar(newVol.ToString));
+
+  Player.SetVolume(Trunc(curVol)+newVol);
+
+  // Show controls
+  ShowOverlayControls();
 end;
 
 procedure TfrmMain.ShowFullScreen(blnOn: boolean);
@@ -1089,7 +1152,6 @@ begin
       //SetWindowLong(Handle, GWL_STYLE, WS_POPUP or WS_CLIPSIBLINGS or WS_CLIPCHILDREN or WS_SYSMENU); < deprecated
       SetWindowLongPtr(Handle, GWL_STYLE, LONG_PTR(WS_POPUP or WS_CLIPSIBLINGS or WS_CLIPCHILDREN or WS_SYSMENU)); // 5
       SetWindowLongPtr(Handle, GWL_EXSTYLE, WS_EX_CONTROLPARENT or WS_EX_APPWINDOW or WS_EX_ACCEPTFILES);          // 6
-
       WindowState:= wsFullScreen; // 7
       //BoundsRect:= CurrentMonitor.BoundsRect;
 
@@ -1187,6 +1249,13 @@ begin
     Screen.Cursor:= crNone;
     Self.Cursor:=crNone;
   //end;
+end;
+
+procedure TfrmMain.IdleTimerOverlayControlsHideTimer(Sender: TObject);
+begin
+  if (frmShell <> nil) then
+    if (frmShell.AlphaBlendValue <> 0) then
+      frmShell.AlphaBlendValue:=0;
 end;
 
 procedure TfrmMain.RestoreFormState;
