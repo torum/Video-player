@@ -1,8 +1,9 @@
 unit UMain;
 
 // EnableBlur procedure requires delphi mode.
-//{$mode objfpc}{$H+}
-{$mode delphi}
+// {$mode delphi}
+{$mode objfpc}{$H+}
+
 
 interface
 
@@ -19,6 +20,7 @@ type
 
   TfrmMain = class(TForm)
     IdleTimerMouseHide: TIdleTimer;
+    PopupMenu1: TPopupMenu;
     XMLConfig: TXMLConfig;
     procedure FormActivate(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -28,14 +30,16 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormDropFiles(Sender: TObject; const FileNames: array of string);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FormMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
     procedure FormShow(Sender: TObject);
     procedure IdleTimerMouseHideStopTimer(Sender: TObject);
     procedure IdleTimerMouseHideTimer(Sender: TObject);
 
-  private 
-    FintOldWndStyle:integer;
-    FintOldExWndStyle:integer;
-
+  private
     // Main file lists
     FstFileList:TStringList;
     FstDirectoryList:TStringList; 
@@ -44,6 +48,11 @@ type
     FstFileExtList:TStringList;
     FstPlaylistExtList:TStringList;  // TODO:
 
+    FstrInitialDir:string;
+    FintCurrentFileIndex:integer;
+    FisSingleFileSelected: boolean;
+    FstrInitialSelectedVideoFile:string;
+
     // User Opts.
     FOptFileExts:string;// user defined file ext.
     FOptPlaylistExts:string;
@@ -51,17 +60,21 @@ type
     FOptBackgroundBlack:boolean;
     FOptMinimulFileSizeKiloByte:integer; //TODO: need to check if this is even needed.
 
-
-    FstrInitialDir:string;
-    FintCurrentFileIndex:integer;
-    FisSingleFileSelected: boolean;
-    FstrInitialSelectedVideoFile:string;
-
     // App status flags.
     FisFullScreen: boolean;
     FOrigBounds: TRect;
     FOrigWndState: TWindowState;
     FCurrentMonitor:TMonitor;
+
+    // Fullscreen related
+    FintOldWndStyle:integer;
+    FintOldExWndStyle:integer;
+
+    // Form drag and move.
+    FPos: TPoint;
+    FisMouseDown: boolean;
+    FisMoving: boolean;
+    procedure PlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
     procedure LoadDirectories(const Dirs: TStringList; FList: TStringList);
     procedure LoadSiblings(const FName: string; FList: TStringList);
     procedure LoadVideo;
@@ -73,11 +86,13 @@ type
     function GetCurrentMonitorIndex():integer;
     procedure RestoreFormState;
     procedure StoreFormState;
+    procedure ParsePramsAndBuildFileList; 
+    procedure LoadSettings;
     {$ifdef windows}
-    procedure EnableBlur(blon:boolean);
+    //procedure EnableBlur(blon:boolean);
     {$endif}
   public
-    //cPlayer: TMPVBasePlayer;
+    Player: TMPVBasePlayer;
     procedure ShowFullScreen(blnOn: boolean);
     procedure LoadNextVideo;
     Property IntCurrentFileIndex: integer read FintCurrentFileIndex;
@@ -105,8 +120,10 @@ var
   frmMain: TfrmMain;
 
 {$ifdef windows}
+{ For EnableBlur
 var
   SetWindowCompositionAttribute: function (Wnd: HWND; const AttrData: TWinCompAttrData): BOOL; stdcall = Nil;
+}
 {$endif}
 
 implementation
@@ -119,13 +136,8 @@ uses
 { TfrmMain }
 
 procedure TfrmMain.FormCreate(Sender: TObject);
-var
-  configFile:string;
-  errcode:integer;
-  i:integer;
-  f:int64;
 begin
-
+  // Set ini values.
   self.Caption := 'Movie Player';
 
   FstFileList:=TStringList.create;
@@ -157,6 +169,25 @@ begin
   {$endif}
 
   // Load settings
+  LoadSettings();
+  // Parse prams and build FileList
+  ParsePramsAndBuildFileList();
+
+  // Instansiate some objects.
+
+  // Create player, but not init yet.
+  Player := TMPVBasePlayer.Create;
+
+  // Create so called shell to overlay some media controls using alpha values.
+  frmShell := TfrmShell.create(self);
+  frmShell.Parent := self;
+end;
+
+procedure TfrmMain.LoadSettings();
+var
+  configFile:string;
+begin
+
   configFile := ReplaceStr(ExtractFileName(ParamStr(0)),ExtractFileExt(ParamStr(0)),'.config');
   if (not FileExists(ExtractFilePath(Application.ExeName)+configFile)) and ForceDirectories(GetAppConfigDir(false)) then
   begin
@@ -195,8 +226,13 @@ begin
   begin
      RestoreFormState;
   end;
+end;
 
-
+procedure TfrmMain.ParsePramsAndBuildFileList();
+var
+  i:integer;
+  f:int64;
+begin
 
   // TODO: skip command line parameters for now.
 
@@ -336,13 +372,6 @@ begin
     FintCurrentFileIndex:=0;
   end;
 
-   {
-  // Init player.
-  cPlayer := TMPVBasePlayer.Create;
-  cPlayer.InitPlayer(IntToStr(self.Handle), '', '', '');
-  errcode := cPlayer.SetHardwareDecoding('yes');
-  //outputdebugstring(pchar(errcode.ToString));
-  }
 end;
 
 procedure TfrmMain.FormActivate(Sender: TObject);
@@ -351,6 +380,8 @@ begin
 end;
 
 procedure TfrmMain.FormShow(Sender: TObject);
+var
+  errcode:integer;
 begin
 
   {$ifdef windows}
@@ -359,14 +390,76 @@ begin
   ApplyFormDarkTitle(self, true, true);
   {$endif}
 
-  frmShell := TfrmShell.create(self);
-  frmShell.Parent := self;
   frmShell.Show;
+  frmShell.AlphaBlend:=true;
+  frmShell.AlphaBlendValue:=0;// set to max 255 or lower to show media controls when needed.
 
-  // Need to be here. not in the OnCreate.
+  // Int Player here.
+  errcode := Player.InitPlayer(IntToStr(self.Handle), '', GetAppConfigDir(false)+'mpv.conf', ''); //
+
+  // TODO: Check errors.
+  //outputdebugstring(pchar(errcode.ToString));
+
+  Player.SetHardwareDecoding('yes');
+
+  //Player.SetPropertyString('media-controls', 'yes');
+  //Player.SetPropertyString('idle', 'yes');
+  //Player.SetPropertyString("screenshot-directory", "~~desktop/");
+  Player.SetPropertyString('osd-playing-msg', '${media-title}');
+  Player.SetPropertyString('osc', 'yes');
+  Player.SetPropertyString('osd-bar', 'yes');
+  Player.SetPropertyString('config-dir', GetAppConfigDir(false));
+  Player.SetPropertyString('config', 'yes');
+  //Player.SetPropertyString('input-conf', GetAppConfigDir(false)+'input.conf');
+
+  // Subscribing to status change event
+  Player.OnStateChged := @PlayerStatusChanged; // @PlayerStatusChanged if objectpascal mode, PlayerStatusChanged for delphi.
+
+  // Need to be here in FormShow. not in the OnCreate.
   if (FstFileList.Count> 0) then
   begin
     LoadVideo;
+  end;
+end;
+
+procedure TfrmMain.PlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
+//var
+  //plWidth,plHeight:int64;
+begin
+
+  if (eState = TMPVPlayerState.mpsPlay) then
+  begin
+    // uhh not working?
+    //outputdebugstring(pchar('mpsPlay height:'+Player.VideoHeight.ToString + ' width:'+Player.VideoWidth.ToString));
+
+    // Fit window
+    {
+    plWidth:=0;plHeight:=0;
+    Player.GetPropertyInt64('width', plWidth, False);
+    Player.GetPropertyInt64('height', plHeight, False);
+    //outputdebugstring(pchar('mpsPlay height:'+plHeight.ToString + ' width:'+plWidth.ToString));
+
+    self.Align:=alClient;
+    frmMain.height := plHeight;
+    frmMain.width := plWidth;
+    }
+    // Manual
+    // TODO:
+
+  end
+  else if (eState = TMPVPlayerState.mpsLoading) then
+  begin
+    //outputdebugstring(pchar('mpsLoading height:'+Player.VideoHeight.ToString + ' width:'+Player.VideoWidth.ToString));
+  end
+  else if (eState = TMPVPlayerState.mpsErr) then
+  begin
+    //outputdebugstring(pchar('mpsErr'));
+  end
+  else if (eState = TMPVPlayerState.mpsEnd) then
+  begin
+    outputdebugstring(pchar('mpsEnd'));
+    // We don't know if this "End" is just finished the video or closing down the app. Need to check that or else we get AV.
+    //frmMain.LoadNextVideo;
   end;
 
 end;
@@ -600,8 +693,11 @@ var
 begin
   if FileList.Count > 0 then
   begin
+    // Includes file path
+    //strPath := MinimizeName(FileList[FintCurrentFileIndex],Self.Canvas, self.width - 300);
+    // File name only.
+    strPath := MinimizeName(ReplaceStr(ExtractFileName(FileList[FintCurrentFileIndex]),ExtractFileExt(FileList[FintCurrentFileIndex]),''),Self.Canvas, self.width - 300);
 
-    strPath := MinimizeName(FileList[FintCurrentFileIndex],Self.Canvas, self.width - 300);
 
     if (FileList.Count = 1) then
     begin
@@ -620,7 +716,7 @@ var
   errcode:integer;
 begin
   try
-    errcode := frmShell.Player.OpenFile(filename);
+    errcode := Player.OpenFile(filename);
     if (errcode <> 0) then
     begin
       Self.Caption := filename + ' is not playing.' + ' errcode: ' + errcode.ToString;
@@ -688,20 +784,20 @@ begin
 
   //Player
 
-  plState := frmShell.Player.GetState;
+  plState := Player.GetState;
 
   // Pause/Start
-  if (Key = VK_PAUSE) or (Key = VK_SPACE) then
+  if (Key = VK_PAUSE) or (Key = VK_SPACE) or (Chr(Key) = 'P') then
   begin
     if (plState = TMPVPlayerState.mpsPlay) then
     begin             
       //outputdebugstring(pchar('TMPVPlayerState.mpsPlay'));
-      frmShell.Player.Pause;
+      Player.Pause;
     end
     else if (plState = TMPVPlayerState.mpsPause) then
     begin                   
       //outputdebugstring(pchar('TMPVPlayerState.mpsPause'));
-      frmShell.Player.Resume;
+      Player.Resume;
     end
     else if (plState = TMPVPlayerState.mpsStop) then // TODO: need to check.
     begin
@@ -746,51 +842,51 @@ begin
     // Skip
     if (Key = VK_RIGHT) then
     begin
-      if (ssCtrl in Shift) then
+      if (ssCtrl in Shift) or (ssShift in Shift) then
       begin
-        frmShell.Player.Seek(100,true);
+        Player.Seek(100,true);
       end else
       begin
-        frmShell.Player.Seek(10,true);
+        Player.Seek(10,true);
       end;
     end;
 
     // Back
     if (Key = VK_LEFT) or (Key = VK_BACK) then
     begin
-      if (ssCtrl in Shift) then
+      if (ssCtrl in Shift) or (ssShift in Shift) then
       begin
-        frmShell.Player.Seek(-100,true);
+        Player.Seek(-100,true);
       end else
       begin
-        frmShell.Player.Seek(-10,true);
+        Player.Seek(-10,true);
       end;
     end;
 
     // Volume
     if (Key = VK_UP) then
     begin
-      curVol := frmShell.Player.GetVolume;
+      curVol := Player.GetVolume;
 
       if (ssCtrl in Shift) then
       begin
-        frmShell.Player.SetVolume(curVol+10);
+        Player.SetVolume(curVol+10);
       end else
       begin
-        frmShell.Player.SetVolume(curVol+5);
+        Player.SetVolume(curVol+5);
       end;
     end;
 
     if (Key = VK_DOWN) then
     begin
-      curVol := frmShell.Player.GetVolume;
+      curVol := Player.GetVolume;
 
       if (ssCtrl in Shift) then
       begin
-        frmShell.Player.SetVolume(curVol-10);
+        Player.SetVolume(curVol-10);
       end else
       begin
-        frmShell.Player.SetVolume(curVol-5);
+        Player.SetVolume(curVol-5);
       end;
     end;
 
@@ -834,6 +930,10 @@ end;
 
 procedure TfrmMain.FormDblClick(Sender: TObject);
 begin
+  // this is needed for mouse drag window to work correctly.
+  FisMoving:=false;
+  FisMouseDown:=false;
+
   if (FisFullscreen) then
   begin
     ShowFullScreen(false);
@@ -841,6 +941,39 @@ begin
   begin
     ShowFullScreen(true);
   end;
+end;
+
+procedure TfrmMain.FormMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  case Button of
+    mbLeft: begin
+      FPos.X:=X;
+      FPos.Y:=Y;
+      FisMouseDown:=true;
+    end;
+  end;
+end;
+
+procedure TfrmMain.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  if (frmMain.IsFullscreen) then exit;
+
+  if (FisMouseDown) then
+  begin
+    FisMoving:=true;
+    frmMain.Left:=frmMain.Left+X-FPos.X;
+    frmMain.Top:=frmMain.Top+Y-FPos.Y;
+  end;
+end;
+
+procedure TfrmMain.FormMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  FisMouseDown:=false;
+  FisMoving:=False;
+
 end;
 
 procedure TfrmMain.ShowFullScreen(blnOn: boolean);
@@ -963,6 +1096,7 @@ begin
       // Must be this order til here.
 
       {$ifdef windows}
+      {
       // Background blur when background color is set to clBlack.
       if (Win32MajorVersion>=10) then
       begin
@@ -970,11 +1104,11 @@ begin
         DoubleBuffered := True;
         EnableBlur(true); // TODO: make this an option.
       end;
+      }
      {$endif}
 
     end;
 
-    //ShowWindow(Handle, SW_SHOW);
     SetFocus;
     BringToFront;
     SetForegroundWindow(handle);
@@ -995,6 +1129,7 @@ begin
     end;
 
     {$ifdef windows}
+    {
     // Background blur when background color is set to clBlack.
     if (Win32MajorVersion>=10) then
     begin
@@ -1002,12 +1137,13 @@ begin
       DoubleBuffered := True;
       EnableBlur(false); // TODO: make this an option.
     end;
+    }
    {$endif}
 
     //ShowWindow(Handle, SW_SHOWNORMAL);
     SetFocus;
     BringToFront;
-    //SetForegroundWindow(handle);
+    SetForegroundWindow(handle);
   end;
 end;
 
@@ -1126,12 +1262,10 @@ end;
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   // Clean up
-  {
-  if cPlayer <> nil then
-    cPlayer.Stop;
+  if Player <> nil then
+    Player.Stop;
 
-  FreeAndNil(cPlayer);
-  }
+  FreeAndNil(Player);
 
   FstFileExtList.Free;
   FstPlaylistExtList.Free;
@@ -1141,6 +1275,7 @@ begin
 end;
 
 {$ifdef windows}
+{
 procedure TfrmMain.EnableBlur(blon:boolean);
 // requires delphi mode.
 // https://wiki.lazarus.freepascal.org/Aero_Glass
@@ -1193,11 +1328,15 @@ begin
   end;
 
 end;
+}
 {$endif}
 
 {$ifdef windows}
+{
+// for EnableBlur
 initialization
   SetWindowCompositionAttribute := GetProcAddress(GetModuleHandle(user32), 'SetWindowCompositionAttribute');
+}
 {$endif}
 
 end.

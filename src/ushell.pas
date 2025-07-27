@@ -5,7 +5,7 @@ unit UShell;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs,
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Menus, StdCtrls,
   {$ifdef windows}Windows, DWMApi, windirs, win32titlestyler,{$endif}
   MPVBasePlayer;
 
@@ -14,17 +14,25 @@ type
   { TfrmShell }
 
   TfrmShell = class(TForm)
+    Button1: TButton;
+    procedure Button1Click(Sender: TObject);
+    procedure Button1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState
+      );
     procedure FormCreate(Sender: TObject);
     procedure FormDblClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormDropFiles(Sender: TObject; const FileNames: array of string);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FormMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
     procedure FormShow(Sender: TObject);
   private
-    procedure PlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
-
-  public
-    Player: TMPVBasePlayer;
+    FPos: TPoint;
+    FisMouseDown: boolean;
+    FisMoving: boolean;
   end;
 
 var
@@ -39,32 +47,28 @@ uses
 
 { TfrmShell }
 
+
 procedure TfrmShell.FormCreate(Sender: TObject);
-
 begin
-
-  // player.
-  Player := TMPVBasePlayer.Create;
-
+  self.Color:=clBlack;
 end;
 
-procedure TfrmShell.FormDblClick(Sender: TObject);
+procedure TfrmShell.Button1Click(Sender: TObject);
 begin
-    if (frmMain.IsFullscreen) then
-  begin
-    frmMain.ShowFullScreen(false);
-  end else
-  begin
-    frmMain.ShowFullScreen(true);
-  end;
+  Outputdebugstring(pchar('TfrmShell.Button1Click'));
 end;
 
-procedure TfrmShell.FormDestroy(Sender: TObject);
+procedure TfrmShell.Button1KeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
 begin
-  if Player <> nil then
-    Player.Stop;
+  // Somehow this button steals all the key down events...
+  Outputdebugstring(pchar('TfrmShell.Button1KeyDown'));
+  frmMain.FormKeyDown(self,Key,Shift);
+end;
 
-  FreeAndNil(Player);
+procedure TfrmShell.FormShow(Sender: TObject);
+begin
+
 end;
 
 procedure TfrmShell.FormDropFiles(Sender: TObject;
@@ -76,67 +80,64 @@ end;
 procedure TfrmShell.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
+  // Button1 stole all the key down events..
+  Outputdebugstring(pchar('TfrmShell.FormKeyDown'));
   frmMain.FormKeyDown(self,Key,Shift);
 end;
 
-procedure TfrmShell.FormShow(Sender: TObject);
-var
-  errcode:integer;
+procedure TfrmShell.FormDblClick(Sender: TObject);
 begin
+  // this is needed for mouse drag window to work correctly.
+  FisMoving:=false;
+  FisMouseDown:=false;
 
-  BorderStyle := bsNone;
-  //windowstate:=wsFullScreen;
-
-  Player.InitPlayer(IntToStr(self.Handle), '', '', '');
-  errcode := Player.SetHardwareDecoding('yes');
-  //outputdebugstring(pchar(errcode.ToString));
-
-  Player.OnStateChged := @PlayerStatusChanged;
-end;
-
-procedure TfrmShell.PlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
-//var
-  //plWidth,plHeight:int64;
-begin
-  if (eState = TMPVPlayerState.mpsPlay) then
+  if (frmMain.IsFullscreen) then
   begin
-    // uhh not working?
-    //outputdebugstring(pchar('mpsPlay height:'+Player.VideoHeight.ToString + ' width:'+Player.VideoWidth.ToString));
-
-    // Fit window
-    {
-    plWidth:=0;plHeight:=0;
-    Player.GetPropertyInt64('width', plWidth, False);
-    Player.GetPropertyInt64('height', plHeight, False);
-    //outputdebugstring(pchar('mpsPlay height:'+plHeight.ToString + ' width:'+plWidth.ToString));
-
-    self.Align:=alClient;
-    frmMain.height := plHeight;
-    frmMain.width := plWidth;
-    }
-
-    // Manual
-    // TODO:
-
-  end else if (eState = TMPVPlayerState.mpsLoading) then
+    frmMain.ShowFullScreen(false);
+  end else
   begin
-    //outputdebugstring(pchar('mpsLoading height:'+Player.VideoHeight.ToString + ' width:'+Player.VideoWidth.ToString));
-
-
-  end else if (eState = TMPVPlayerState.mpsErr) then
-  begin
-    //outputdebugstring(pchar('mpsErr'));
-  end
-  else if (eState = TMPVPlayerState.mpsEnd) then
-  begin
-    outputdebugstring(pchar('mpsEnd'));
-
-    // We don't know if this "End" is just finished the video or closing down the app. Need to check that or else we get AV.
-    //frmMain.LoadNextVideo;
+    frmMain.ShowFullScreen(true);
   end;
+end;
 
+procedure TfrmShell.FormMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  case Button of
+    mbLeft: begin
+      FPos.X:=X;
+      FPos.Y:=Y;
+      FisMouseDown:=true;
+    end;
+  end;
+end;
+
+procedure TfrmShell.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  if (frmMain.IsFullscreen) then exit;
+
+  if (FisMouseDown) then
+  begin
+    FisMoving:=true;
+    frmMain.Left:=frmMain.Left+X-FPos.X;
+    frmMain.Top:=frmMain.Top+Y-FPos.Y;
+  end;
+end;
+
+procedure TfrmShell.FormMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  FisMouseDown:=false;
+  FisMoving:=False;
 
 end;
+
+procedure TfrmShell.FormDestroy(Sender: TObject);
+begin
+
+end;
+
 
 
 end.

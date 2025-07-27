@@ -14,6 +14,9 @@ object frmMain: TfrmMain
   OnDestroy = FormDestroy
   OnDropFiles = FormDropFiles
   OnKeyDown = FormKeyDown
+  OnMouseDown = FormMouseDown
+  OnMouseMove = FormMouseMove
+  OnMouseUp = FormMouseUp
   OnShow = FormShow
   object XMLConfig: TXMLConfig
     StartEmpty = False
@@ -29,5 +32,9 @@ object frmMain: TfrmMain
     OnStopTimer = IdleTimerMouseHideStopTimer
     Left = 248
     Top = 40
+  end
+  object PopupMenu1: TPopupMenu
+    Left = 56
+    Top = 200
   end
 end
