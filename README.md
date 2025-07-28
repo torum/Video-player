@@ -2,9 +2,9 @@
 
 Simple and minimum, yet configurable [mpv](https://mpv.io/) frontend based on [LibMPVDelphi](https://github.com/nbuyer/libmpvdelphi).
 
-Under development.
+Currently, **under development**.
 
-Even though Video-player ueses libmpv library component from mpv project to play videos, it does not follow almost any shortcut keys or resuse config nor scripts or anything. It simply just plays video quickly, simply and easily without any distraction.
+Even though Video-player ueses the libmpv library component from the mpv project to play videos, it does not follow almost any shortcut keys or reuse config nor scripts or anything. It just simply plays videos quickly, simply and easily without any distraction.
 
 ## Current progress
 
@@ -36,4 +36,9 @@ Wheele down => Volume down
 Wheele up => Volume up  
 Right click => show on screen/visual controls.  
 ```
+
+[ ] Seek bar.  
+[ ] Elapsed time.  
+[ ] Right click popup menu.  
+
 
