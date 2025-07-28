@@ -68,7 +68,7 @@ type
     FisFullScreen: boolean;
     FOrigBounds: TRect;
     FOrigWndState: TWindowState;
-    FCurrentMonitor:TMonitor;
+    //FCurrentMonitor:TMonitor;
 
     // Fullscreen related
     FintOldWndStyle:integer;
@@ -1228,7 +1228,7 @@ begin
       frmShell.Align:=alClient;
       //frmShell.Visible:=true;
       frmShell.Refresh;
-
+      frmShell.Repaint;
     end;
 
     SetFocus;
@@ -1272,6 +1272,7 @@ begin
     frmShell.ReAlign;
     frmShell.Align:=alClient;
     frmShell.Refresh;
+    frmShell.Repaint;
 
     //ShowWindow(Handle, SW_SHOWNORMAL);
     SetFocus;
@@ -1283,14 +1284,7 @@ end;
 
 function TfrmMain.GetCurrentMonitor():TMonitor;
 begin
-  if not Assigned(FCurrentMonitor) then
-  begin
-    FCurrentMonitor := Screen.MonitorFromWindow(Handle);
-    result:=FCurrentMonitor;
-  end else
-  begin
-    result:=FCurrentMonitor;
-  end;
+  result:=Screen.MonitorFromWindow(Handle);  ;
 end;
 
 function TfrmMain.GetCurrentMonitorIndex():integer;
