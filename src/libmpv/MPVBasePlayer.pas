@@ -1218,7 +1218,7 @@ begin
 //  SetPropertyString('osd-playing-msg', '${filename}');
   if sLogFile<>'' then SetPropertyString(STR_LOG_FILE, sLogFile);
   SetPropertyString(STR_WID, sWinHandle);
-  SetPropertyString('osc', 'yes'); // On Screen Control
+  SetPropertyString('osc', 'no'); // On Screen Control
   SetPropertyString('force-window', 'yes');
   SetPropertyString('config-dir', sConfigDir); // mpv.conf location
   SetPropertyString('config', 'yes');

@@ -5,6 +5,8 @@ object frmShell: TfrmShell
   Width = 690
   Align = alClient
   AllowDropFiles = True
+  AlphaBlend = True
+  AlphaBlendValue = 250
   BorderStyle = bsNone
   ClientHeight = 547
   ClientWidth = 690
@@ -31,19 +33,57 @@ object frmShell: TfrmShell
     OnClick = Button1Click
     OnKeyDown = Button1KeyDown
   end
-  object TrackBarVolume: TTrackBar
-    Left = 652
-    Height = 547
-    Top = 0
-    Width = 38
-    Max = 1000
-    Orientation = trVertical
-    Position = 0
-    Reversed = True
-    ScalePos = trLeft
-    TabStop = False
-    Align = alRight
-    TabOrder = 1
-    OnKeyDown = TrackBarVolumeKeyDown
+  object TrackBarVolume: TBCFluentSlider
+    Left = 608
+    Height = 200
+    Top = 136
+    Width = 48
+    MaxValue = 1000
+    Value = 1000
+    Orientation = pbVertical
+    Align = alCustom
+    Anchors = [akRight]
+    BorderSpacing.Top = 160
+    BorderSpacing.Bottom = 360
+    BorderSpacing.Around = 48
+  end
+  object BCFluentSlider1: TBCFluentSlider
+    Left = 32
+    Height = 48
+    Top = 416
+    Width = 624
+    Anchors = [akLeft, akRight, akBottom]
+  end
+  object LabelElapsedTime: TLabel
+    Left = 40
+    Height = 25
+    Top = 472
+    Width = 140
+    Anchors = [akLeft, akBottom]
+    AutoSize = False
+    Caption = 'LabelElapsedTime'
+    Font.Color = clWhite
+    Font.Height = 25
+    Font.Quality = fqAntialiased
+    OptimalFill = True
+    ParentColor = False
+    ParentFont = False
+    ShowAccelChar = False
+  end
+  object LabelTotalTime: TLabel
+    Left = 536
+    Height = 25
+    Top = 472
+    Width = 116
+    Anchors = [akRight, akBottom]
+    AutoSize = False
+    Caption = 'LabelTotalTime'
+    Font.Color = clWhite
+    Font.Height = 25
+    Font.Quality = fqAntialiased
+    OptimalFill = True
+    ParentColor = False
+    ParentFont = False
+    ShowAccelChar = False
   end
 end

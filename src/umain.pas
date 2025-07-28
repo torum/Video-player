@@ -84,7 +84,7 @@ type
 
     FintVolume:integer;
 
-    procedure PlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
+    procedure OnPlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
     procedure LoadDirectories(const Dirs: TStringList; FList: TStringList);
     procedure LoadSiblings(const FName: string; FList: TStringList);
     procedure LoadVideo;
@@ -407,11 +407,11 @@ begin
   {$ifdef windows}
   // Apply dark themed title bar.
   // https://forum.lazarus.freepascal.org/index.php/topic,59172.msg441116.html
-  ApplyFormDarkTitle(self, true, true);
+  ApplyFormDarkTitle(self, true, false); // needed to force=false bacause of the glich when changing to fullscreen.
   {$endif}
 
   frmShell.Show;
-  frmShell.Visible:=false;
+  //frmShell.Visible:=false;
   //frmShell.AlphaBlend:=true;
   //frmShell.AlphaBlendValue:=0;// set to max 255 or lower to show media controls when needed.
 
@@ -440,7 +440,7 @@ begin
 
 
   // Subscribing to status change event
-  Player.OnStateChged := @PlayerStatusChanged; // @PlayerStatusChanged if objectpascal mode, PlayerStatusChanged for delphi.
+  Player.OnStateChged := @OnPlayerStatusChanged; // @PlayerStatusChanged if objectpascal mode, PlayerStatusChanged for delphi.
 
   SetVolume(FintVolume);
 
@@ -451,14 +451,14 @@ begin
   end;
 end;
 
-procedure TfrmMain.PlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
+procedure TfrmMain.OnPlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
 //var
   //plWidth,plHeight:int64;
 begin
 
   if (eState = TMPVPlayerState.mpsPlay) then
   begin
-    // uhh not working?
+    // uhh not working? < looks like it gives me 0 for the first video.
     //outputdebugstring(pchar('mpsPlay height:'+Player.VideoHeight.ToString + ' width:'+Player.VideoWidth.ToString));
 
     // Fit window
@@ -478,7 +478,7 @@ begin
   end
   else if (eState = TMPVPlayerState.mpsLoading) then
   begin
-    //outputdebugstring(pchar('mpsLoading height:'+Player.VideoHeight.ToString + ' width:'+Player.VideoWidth.ToString));
+    //
   end
   else if (eState = TMPVPlayerState.mpsErr) then
   begin
@@ -721,7 +721,8 @@ begin
   begin
     if (FstFileList.Count >= FintCurrentFileIndex+1) then
     begin
-      FintCurrentFileIndex := FintCurrentFileIndex-1;
+      if (FintCurrentFileIndex <> 0) then
+        FintCurrentFileIndex := FintCurrentFileIndex-1;
     end else
     begin
       FintCurrentFileIndex := 0;
@@ -769,6 +770,7 @@ begin
       result:=false;
     end else
     begin
+      //
       result:=true;
     end;
   except
@@ -891,11 +893,11 @@ begin
     if (ssCtrl in Shift) then
     begin
       Player.SetVolume(curVol+10);
-      frmShell.TrackBarVolume.Position:=Trunc(curVol)+10;
+      frmShell.TrackBarVolume.Value:=Trunc(curVol)+10;
     end else
     begin
       Player.SetVolume(curVol+5);
-      frmShell.TrackBarVolume.Position:=Trunc(curVol)+5;
+      frmShell.TrackBarVolume.Value:=Trunc(curVol)+5;
     end;
     // Show controls
     ShowOverlayControls();
@@ -907,11 +909,11 @@ begin
     if (ssCtrl in Shift) then
     begin
       Player.SetVolume(curVol-10);
-      frmShell.TrackBarVolume.Position:=Trunc(curVol)-10;
+      frmShell.TrackBarVolume.Value:=Trunc(curVol)-10;
     end else
     begin
       Player.SetVolume(curVol-5);
-      frmShell.TrackBarVolume.Position:=Trunc(curVol)-5;
+      frmShell.TrackBarVolume.Value:=Trunc(curVol)-5;
     end;
     // Show controls
     ShowOverlayControls();
@@ -1031,7 +1033,7 @@ var
 begin
   // Update volume value
   curVol := Player.GetVolume;
-  frmShell.TrackBarVolume.Position:=Trunc(curVol);
+  frmShell.TrackBarVolume.Value:=Trunc(curVol);
 
   // Make visible
   //frmShell.AlphaBlendValue:=FintAlphaBlendValue;
@@ -1200,24 +1202,32 @@ begin
       FintOldWndStyle:= GetWindowLong(Self.handle,GWL_STYLE);      // 3
       FintOldExWndStyle:= GetWindowLong(Self.handle,GWL_EXSTYLE);  // 4
 
-      //SetWindowLong(Handle, GWL_STYLE, WS_POPUP or WS_CLIPSIBLINGS or WS_CLIPCHILDREN or WS_SYSMENU); < deprecated
-      SetWindowLongPtr(Self.Handle, GWL_STYLE, LONG_PTR(WS_POPUP or WS_CLIPSIBLINGS or WS_CLIPCHILDREN or WS_SYSMENU or WS_EX_LAYERED)); // 5
-      SetWindowLongPtr(Self.Handle, GWL_EXSTYLE, WS_EX_CONTROLPARENT or WS_EX_APPWINDOW or WS_EX_ACCEPTFILES);          // 6
 
+      //frmShell.Visible:=false;
+      //frmShell.Parent:=nil;
+      //Self.BeginFormUpdate;
+      //SetWindowLong(Handle, GWL_STYLE, WS_POPUP or WS_CLIPSIBLINGS or WS_CLIPCHILDREN or WS_SYSMENU); < deprecated
+      SetWindowLongPtr(Self.Handle, GWL_STYLE, LONG_PTR(WS_VISIBLE and (not WS_DLGFRAME) or WS_EX_LAYERED)); // 5
+      SetWindowLongPtr(Self.Handle, GWL_EXSTYLE, WS_EX_CONTROLPARENT or WS_EX_APPWINDOW or WS_EX_ACCEPTFILES);          // 6
+      //SetWindowPos(Self.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE or SWP_NOSIZE or SWP_NOREDRAW or SWP_FRAMECHANGED);
+      SetWindowPos(Self.Handle, HWND_TOPMOST, 0, 0, CurrentMonitor.BoundsRect.Right, CurrentMonitor.BoundsRect.Bottom, SWP_NOMOVE or SWP_NOSIZE or SWP_NOREDRAW or SWP_FRAMECHANGED);
+
+
+      //ShowWindow(Handle, SW_SHOWFULLSCREEN);
+      //Application.ProcessMessages;
+      BoundsRect:= CurrentMonitor.BoundsRect;  
       WindowState:= wsFullScreen; // 7
-      //BoundsRect:= CurrentMonitor.BoundsRect;
+
+      //Self.EndFormUpdate;
+      Self.Refresh;
+
 
       // Must be this order til here.
-      {
-      // Background blur when background color is set to clBlack.
-      if (Win32MajorVersion>=10) then
-      begin
-        self.color := clBlack; // Temp set to black
-        DoubleBuffered := True;
-        EnableBlur(true); // TODO: make this an option.
-      end;
-      }
-
+      //frmShell.Parent:=self;
+      frmShell.ReAlign;
+      frmShell.Align:=alClient;
+      //frmShell.Visible:=true;
+      frmShell.Refresh;
 
     end;
 
@@ -1229,16 +1239,24 @@ begin
   begin
     if FisFullScreen then
     begin
-
-      SetWindowLongPtr(handle, GWL_STYLE, FintOldWndStyle);
-      SetWindowLongPtr(handle, GWL_EXSTYLE, FintOldExWndStyle);
-
-      WindowState:= FOrigWndState;
+      Self.BeginFormUpdate;
 
       if (FOrigWndState = wsNormal) then
       begin
         BoundsRect:= FOrigBounds;
       end;
+
+      SetWindowLongPtr(handle, GWL_STYLE, FintOldWndStyle);
+      //SetWindowPos(Self.Handle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE or SWP_NOSIZE or SWP_NOREDRAW or SWP_FRAMECHANGED);
+      SetWindowLongPtr(handle, GWL_EXSTYLE, FintOldExWndStyle);
+
+      Self.EndFormUpdate;
+      Application.ProcessMessages;
+
+      WindowState:= FOrigWndState;
+
+      SetWindowPos(Self.Handle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE or SWP_NOSIZE or SWP_FRAMECHANGED);
+
     end;
 
 
@@ -1251,7 +1269,9 @@ begin
       EnableBlur(false); // TODO: make this an option.
     end;
     }
-
+    frmShell.ReAlign;
+    frmShell.Align:=alClient;
+    frmShell.Refresh;
 
     //ShowWindow(Handle, SW_SHOWNORMAL);
     SetFocus;

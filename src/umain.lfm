@@ -5,6 +5,7 @@ object frmMain: TfrmMain
   Width = 632
   Align = alClient
   AllowDropFiles = True
+  Color = clBlack
   DesignTimePPI = 144
   OnActivate = FormActivate
   OnClose = FormClose

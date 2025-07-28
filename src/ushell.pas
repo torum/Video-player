@@ -6,7 +6,8 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Menus, StdCtrls,
-  ComCtrls,
+  ComCtrls, BCImageButton, BCFluentSlider, BGRAFlashProgressBar,
+  BCRadialProgressBar, BCButton, BCSVGButton, BGRAImageList,LCLType, ExtCtrls,
   {$ifdef windows}Windows, DWMApi, windirs, win32titlestyler,{$endif}
   MPVBasePlayer, Types;
 
@@ -15,8 +16,11 @@ type
   { TfrmShell }
 
   TfrmShell = class(TForm)
+    BCFluentSlider1: TBCFluentSlider;
+    LabelElapsedTime: TLabel;
+    LabelTotalTime: TLabel;
+    TrackBarVolume: TBCFluentSlider;
     Button1: TButton;
-    TrackBarVolume: TTrackBar;
     procedure Button1Click(Sender: TObject);
     procedure Button1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState
       );
@@ -54,7 +58,11 @@ uses
 
 procedure TfrmShell.FormCreate(Sender: TObject);
 begin
-  self.Color:=clBlack;
+
+  //self.Color:=clBlack;
+
+  //Image1.Picture.LoadFromResourceName(Hinstance,'FLUENT_PLAY_CIRCLE_78_FILLED');
+
 end;
 
 procedure TfrmShell.Button1Click(Sender: TObject);
