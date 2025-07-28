@@ -9,7 +9,7 @@ Even though Video-player ueses the libmpv library component from the mpv project
 ## Current progress
 
 [x] Open single or multiple video files via command line parameters to make a playlist. (this includes launching from sendto: shortcut menu in explorer)  
-[x] Open single or multiple video files via folder dorag and drop onto the app window to make a playlist.  
+[x] Open single or multiple video files via drag and drop of file or folder onto the app window to make a playlist.  
 [x] Fullscreen viewing.  
 [x] Basic keyboard command including,  
 ```
