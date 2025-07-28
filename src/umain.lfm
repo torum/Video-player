@@ -6,7 +6,6 @@ object frmMain: TfrmMain
   Align = alClient
   AllowDropFiles = True
   DesignTimePPI = 144
-  LCLVersion = '4.0.0.4'
   OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery

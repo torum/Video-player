@@ -5,13 +5,11 @@ object frmShell: TfrmShell
   Width = 690
   Align = alClient
   AllowDropFiles = True
-  AlphaBlend = True
   BorderStyle = bsNone
   ClientHeight = 547
   ClientWidth = 690
   Color = clBlack
   DesignTimePPI = 144
-  LCLVersion = '4.0.0.4'
   OnCreate = FormCreate
   OnDblClick = FormDblClick
   OnDestroy = FormDestroy

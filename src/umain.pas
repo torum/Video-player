@@ -79,8 +79,10 @@ type
     FisMouseDown: boolean;
     FisMoving: boolean;
 
-    //
+    // no longer in use.
     FintAlphaBlendValue:integer;
+
+    FintVolume:integer;
 
     procedure PlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
     procedure LoadDirectories(const Dirs: TStringList; FList: TStringList);
@@ -96,7 +98,6 @@ type
     procedure StoreFormState;
     procedure ParsePramsAndBuildFileList; 
     procedure LoadSettings;
-
     {$ifdef windows}
     //procedure EnableBlur(blon:boolean);
     {$endif}
@@ -104,6 +105,8 @@ type
     Player: TMPVBasePlayer;
     procedure ShowFullScreen(blnOn: boolean);
     procedure LoadNextVideo;
+    procedure LoadPrevVideo;
+    procedure SetVolume(newVol:integer);
     procedure ShowOverlayControls;
     Property IntCurrentFileIndex: integer read FintCurrentFileIndex;
     property FileList: TStringList read FstFileList;
@@ -179,6 +182,7 @@ begin
   FstrInitialDir := '';
   {$endif}
 
+  // no longer in use
   FintAlphaBlendValue := 20;
 
   // Load settings
@@ -233,6 +237,9 @@ begin
   begin
     self.Color:=clWhite;
   end;
+
+  FOptIncludeSubFolders := XMLConfig.GetValue('/Opts/IncludeSubFolders',false);
+  FintVolume := XMLConfig.GetValue('/State/Volume',50);
 
   // This must be in "FormCreate", "FormShow" causes weird bug.
   if fileexists(XMLConfig.FileName) then
@@ -404,27 +411,29 @@ begin
   {$endif}
 
   frmShell.Show;
-  frmShell.AlphaBlend:=true;
-  frmShell.AlphaBlendValue:=0;// set to max 255 or lower to show media controls when needed.
+  frmShell.Visible:=false;
+  //frmShell.AlphaBlend:=true;
+  //frmShell.AlphaBlendValue:=0;// set to max 255 or lower to show media controls when needed.
 
   // Int Player here.
-  errcode := Player.InitPlayer(IntToStr(self.Handle), '', GetAppConfigDir(false)+'mpv.conf', ''); //
+  errcode := Player.InitPlayer(IntToStr(self.Handle), '', GetAppConfigDir(false), '');
 
   // TODO: Check errors.
   //outputdebugstring(pchar(errcode.ToString));
 
   Player.SetHardwareDecoding('yes');
 
-  //Player.SetPropertyString('media-controls', 'yes');
+  Player.SetPropertyString('media-controls', 'yes');
   //Player.SetPropertyString('idle', 'yes');
   //Player.SetPropertyString("screenshot-directory", "~~desktop/");
   Player.SetPropertyString('osd-playing-msg', '${media-title}');
-  Player.SetPropertyString('osc', 'yes');
-  Player.SetPropertyString('osd-bar', 'yes');
+  //Player.SetPropertyString('osc', 'yes');
+  //Player.SetPropertyString('osd-bar', 'yes');
   Player.SetPropertyString('config-dir', GetAppConfigDir(false));
   Player.SetPropertyString('config', 'yes');
   //Player.SetPropertyString('input-conf', GetAppConfigDir(false)+'input.conf');
-
+  // mpv logo on startup.
+  Player.SetPropertyString('osc-idlescreen', 'no');
   //
   Player.SetPropertyString('osd-font-size', '16');
   //this isn't it. Player.SetPropertyString('osd-outline-size', '0'); //Default: 1.65
@@ -432,6 +441,8 @@ begin
 
   // Subscribing to status change event
   Player.OnStateChged := @PlayerStatusChanged; // @PlayerStatusChanged if objectpascal mode, PlayerStatusChanged for delphi.
+
+  SetVolume(FintVolume);
 
   // Need to be here in FormShow. not in the OnCreate.
   if (FstFileList.Count> 0) then
@@ -702,20 +713,37 @@ begin
 
     LoadVideo;
   end;
+end;
 
+procedure TfrmMain.LoadPrevVideo;
+begin
+  if FstFileList.Count > 0 then
+  begin
+    if (FstFileList.Count >= FintCurrentFileIndex+1) then
+    begin
+      FintCurrentFileIndex := FintCurrentFileIndex-1;
+    end else
+    begin
+      FintCurrentFileIndex := 0;
+      //exit;
+    end;
+
+    LoadVideo;
+  end;
 end;
 
 procedure TfrmMain.LoadVideo;
 var
   strPath:string;
 begin
+  // Let's not call this directly. Use LoadNextVideo or LoadPrevVideo.
+
   if FileList.Count > 0 then
   begin
     // Includes file path
     //strPath := MinimizeName(FileList[FintCurrentFileIndex],Self.Canvas, self.width - 300);
     // File name only.
     strPath := MinimizeName(ReplaceStr(ExtractFileName(FileList[FintCurrentFileIndex]),ExtractFileExt(FileList[FintCurrentFileIndex]),''),Self.Canvas, self.width - 300);
-
 
     if (FileList.Count = 1) then
     begin
@@ -889,7 +917,6 @@ begin
     ShowOverlayControls();
   end;
 
-
   // Only if player is playing something.
   if (plState = TMPVPlayerState.mpsPlay) then
   begin
@@ -897,7 +924,12 @@ begin
     // Skip
     if (Key = VK_RIGHT) then
     begin
-      if (ssCtrl in Shift) or (ssShift in Shift) then
+      if (ssCtrl in Shift) then
+      begin
+        // play next video
+        LoadNextVideo;
+      end
+      else if (ssShift in Shift) then
       begin
         Player.Seek(100,true);
       end else
@@ -909,7 +941,12 @@ begin
     // Back
     if (Key = VK_LEFT) or (Key = VK_BACK) then
     begin
-      if (ssCtrl in Shift) or (ssShift in Shift) then
+      if (ssCtrl in Shift) then
+      begin
+        // Play previous video.
+        LoadPrevVideo;
+      end
+      else if (ssShift in Shift) then
       begin
         Player.Seek(-100,true);
       end else
@@ -997,7 +1034,9 @@ begin
   frmShell.TrackBarVolume.Position:=Trunc(curVol);
 
   // Make visible
-  frmShell.AlphaBlendValue:=FintAlphaBlendValue;
+  //frmShell.AlphaBlendValue:=FintAlphaBlendValue;
+  frmShell.Visible:=true;
+
 
   // needed this.
   frmShell.Repaint;
@@ -1031,17 +1070,24 @@ var
   newVol:integer;
 begin
   //outputdebugstring(pchar(WheelDelta.ToString));
-
   curVol := Player.GetVolume;
 
   newVol := WheelDelta div 10;
+  // testing...
   newVol := newVol div 2;
   //Outputdebugstring(pchar(newVol.ToString));
 
-  Player.SetVolume(Trunc(curVol)+newVol);
+  SetVolume(Trunc(curVol)+newVol);
 
   // Show controls
   ShowOverlayControls();
+end;
+
+procedure TfrmMain.SetVolume(newVol:integer);
+begin
+    Player.SetVolume(newVol);
+    // for settings save.
+    FintVolume:=newVol;
 end;
 
 procedure TfrmMain.ShowFullScreen(blnOn: boolean);
@@ -1136,12 +1182,12 @@ begin
     end;
   end;
 end;
-{$ifdef windows}
+
 procedure TfrmMain.SetFullScreen_Win32(blnOn: boolean);
 begin
   // Do not use "BorderStyle:= bsSizeable;" or self.Parent:=nil;
   // Both change window handle which causes app to crash because libmpv dll does not like it.
-
+  {$ifdef windows}
   if blnOn then
   begin
 
@@ -1151,12 +1197,13 @@ begin
       FOrigWndState:= WindowState;// 1
       FOrigBounds:= BoundsRect;   // 2
 
-      FintOldWndStyle:= GetWindowLong(handle,GWL_STYLE);      // 3
-      FintOldExWndStyle:= GetWindowLong(handle,GWL_EXSTYLE);  // 4
+      FintOldWndStyle:= GetWindowLong(Self.handle,GWL_STYLE);      // 3
+      FintOldExWndStyle:= GetWindowLong(Self.handle,GWL_EXSTYLE);  // 4
 
       //SetWindowLong(Handle, GWL_STYLE, WS_POPUP or WS_CLIPSIBLINGS or WS_CLIPCHILDREN or WS_SYSMENU); < deprecated
-      SetWindowLongPtr(Handle, GWL_STYLE, LONG_PTR(WS_POPUP or WS_CLIPSIBLINGS or WS_CLIPCHILDREN or WS_SYSMENU)); // 5
-      SetWindowLongPtr(Handle, GWL_EXSTYLE, WS_EX_CONTROLPARENT or WS_EX_APPWINDOW or WS_EX_ACCEPTFILES);          // 6
+      SetWindowLongPtr(Self.Handle, GWL_STYLE, LONG_PTR(WS_POPUP or WS_CLIPSIBLINGS or WS_CLIPCHILDREN or WS_SYSMENU or WS_EX_LAYERED)); // 5
+      SetWindowLongPtr(Self.Handle, GWL_EXSTYLE, WS_EX_CONTROLPARENT or WS_EX_APPWINDOW or WS_EX_ACCEPTFILES);          // 6
+
       WindowState:= wsFullScreen; // 7
       //BoundsRect:= CurrentMonitor.BoundsRect;
 
@@ -1211,8 +1258,9 @@ begin
     BringToFront;
     SetForegroundWindow(handle);
   end;
+  {$endif}
 end;
-{$endif}
+
 function TfrmMain.GetCurrentMonitor():TMonitor;
 begin
   if not Assigned(FCurrentMonitor) then
@@ -1258,8 +1306,11 @@ end;
 procedure TfrmMain.IdleTimerOverlayControlsHideTimer(Sender: TObject);
 begin
   if (frmShell <> nil) then
-    if (frmShell.AlphaBlendValue <> 0) then
-      frmShell.AlphaBlendValue:=0;
+    //if (frmShell.AlphaBlendValue <> 0) then
+      //frmShell.AlphaBlendValue:=0;
+    if (frmShell.Visible) then
+      frmShell.Visible:=false;
+
 end;
 
 procedure TfrmMain.RestoreFormState;
@@ -1329,6 +1380,8 @@ begin
   XMLConfig.SetValue('/Opts/FileExts',widestring(FOptFileExts));
   XMLConfig.SetValue('/Opts/PlaylistExts',widestring(FOptPlaylistExts));
   XMLConfig.SetValue('/InitDir/Path',widestring(FstrInitialDir));
+
+  XMLConfig.SetValue('/State/Volume',FintVolume);
 
 end;
 

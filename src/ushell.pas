@@ -72,7 +72,9 @@ end;
 
 procedure TfrmShell.FormShow(Sender: TObject);
 begin
-
+  self.Color:=clBlack;
+  SetWindowLongPtr(Self.Handle, GWL_EXSTYLE, GetWindowLongPtr(Self.Handle, GWL_EXSTYLE) or WS_EX_LAYERED);
+  SetLayeredWindowAttributes(Self.Handle, clBlack, 0, LWA_COLORKEY);
 end;
 
 procedure TfrmShell.TrackBarVolumeKeyDown(Sender: TObject; var Key: Word;
