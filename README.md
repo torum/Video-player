@@ -4,7 +4,7 @@ Simple and minimum, yet configurable [mpv](https://mpv.io/) frontend based on [L
 
 Currently, **under development**.
 
-Even though Video-player ueses the libmpv library component from the mpv project to play videos, it does not follow almost any shortcut keys or reuse config nor scripts or anything. It just simply plays videos quickly, simply and easily without any distraction.
+Even though Video-player ueses the libmpv library component from the mpv project to play videos, it does not follow almost any shortcut keys or reuse config or scripts or anything. It just simply plays videos quickly and easily without any distraction.
 
 ## Current progress
 
