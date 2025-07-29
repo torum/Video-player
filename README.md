@@ -4,12 +4,12 @@ Simple and minimum, yet configurable [mpv](https://mpv.io/) frontend based on [L
 
 Currently, **under development**.
 
-Even though Video-player ueses the libmpv library component from the mpv project to play videos, it does not follow almost any shortcut keys or reuse config nor scripts or anything. It just simply plays videos quickly, simply and easily without any distraction.
+Even though Video-player ueses the libmpv library component from the mpv project to play videos, it does not follow almost any shortcut keys or reuse config or scripts or anything. It just simply plays videos quickly and easily without any distraction.
 
 ## Current progress
 
 [x] Open single or multiple video files via command line parameters to make a playlist. (this includes launching from sendto: shortcut menu in explorer)  
-[x] Open single or multiple video files via folder dorag and drop onto the app window to make a playlist.  
+[x] Open single or multiple video files via drag and drop of file or folder onto the app window to make a playlist.  
 [x] Fullscreen viewing.  
 [x] Basic keyboard command including,  
 ```
