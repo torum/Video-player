@@ -12,7 +12,7 @@ uses
   LclType, LclProc, LclIntf, Menus, StdCtrls, ExtDlgs, FileUtil,
   strutils, Types, FileCtrl, XMLConf,
   {$ifdef windows}Windows, DWMApi, windirs, win32titlestyler,{$endif}
-  MPVBasePlayer;
+  MPVBasePlayer, MPVClient;
 
 type
 
@@ -85,6 +85,10 @@ type
     FintVolume:integer;
 
     procedure OnPlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
+    procedure OnPlayerPropertyChanged(Sender: TObject; ID: MPVUInt64; Fmt: mpv_format; pData: Pointer);
+    procedure OnPlayerProgress(Sender: TObject; CurSec, TotalSec: Double);
+    procedure OnPlayerErrorMessage(Sender: TObject; const Prefix: string; Level: Int32; const Msg: string);
+
     procedure LoadDirectories(const Dirs: TStringList; FList: TStringList);
     procedure LoadSiblings(const FName: string; FList: TStringList);
     procedure LoadVideo;
@@ -440,7 +444,10 @@ begin
 
 
   // Subscribing to status change event
-  Player.OnStateChged := @OnPlayerStatusChanged; // @PlayerStatusChanged if objectpascal mode, PlayerStatusChanged for delphi.
+  Player.OnStateChged := @OnPlayerStatusChanged; // @PlayerStatusChanged if objectpascal mode, PlayerStatusChanged if delphi.
+  Player.OnPropertyChanged := @OnPlayerPropertyChanged; //TMPVPropertyChangedEvent
+  Player.OnProgress:=@OnPlayerProgress; //TMPVProgressEvent
+  Player.OnErrorMessage:=@OnPlayerErrorMessage;
 
   SetVolume(FintVolume);
 
@@ -449,48 +456,6 @@ begin
   begin
     LoadVideo;
   end;
-end;
-
-procedure TfrmMain.OnPlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
-//var
-  //plWidth,plHeight:int64;
-begin
-
-  if (eState = TMPVPlayerState.mpsPlay) then
-  begin
-    // uhh not working? < looks like it gives me 0 for the first video.
-    //outputdebugstring(pchar('mpsPlay height:'+Player.VideoHeight.ToString + ' width:'+Player.VideoWidth.ToString));
-
-    // Fit window
-    {
-    plWidth:=0;plHeight:=0;
-    Player.GetPropertyInt64('width', plWidth, False);
-    Player.GetPropertyInt64('height', plHeight, False);
-    //outputdebugstring(pchar('mpsPlay height:'+plHeight.ToString + ' width:'+plWidth.ToString));
-
-    self.Align:=alClient;
-    frmMain.height := plHeight;
-    frmMain.width := plWidth;
-    }
-    // Manual
-    // TODO:
-
-  end
-  else if (eState = TMPVPlayerState.mpsLoading) then
-  begin
-    //
-  end
-  else if (eState = TMPVPlayerState.mpsErr) then
-  begin
-    //outputdebugstring(pchar('mpsErr'));
-  end
-  else if (eState = TMPVPlayerState.mpsEnd) then
-  begin
-    //outputdebugstring(pchar('mpsEnd'));
-    // We don't know if this "End" is just finished the video or closing down the app. Need to check that or else we get AV.
-    //frmMain.LoadNextVideo;
-  end;
-
 end;
 
 procedure TfrmMain.LoadDirectories(const Dirs: TStringList; FList: TStringList);
@@ -789,6 +754,83 @@ begin
       result:=false;
     end;
   end;
+end;
+
+procedure TfrmMain.OnPlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
+//var
+  //plWidth,plHeight:int64;
+begin
+  // Use TThread.Synchronize() to update UI.
+
+  if (eState = TMPVPlayerState.mpsPlay) then
+  begin
+    // uhh not working? < looks like it gives me 0 for the first video.
+    //outputdebugstring(pchar('mpsPlay height:'+Player.VideoHeight.ToString + ' width:'+Player.VideoWidth.ToString));
+
+    // Fit window
+    {
+    plWidth:=0;plHeight:=0;
+    Player.GetPropertyInt64('width', plWidth, False);
+    Player.GetPropertyInt64('height', plHeight, False);
+    //outputdebugstring(pchar('mpsPlay height:'+plHeight.ToString + ' width:'+plWidth.ToString));
+
+    self.Align:=alClient;
+    frmMain.height := plHeight;
+    frmMain.width := plWidth;
+    }
+    // Manual
+    // TODO:
+
+  end
+  else if (eState = TMPVPlayerState.mpsPause) then
+  begin
+    //
+  end
+  else if (eState = TMPVPlayerState.mpsStep) then
+  begin
+    // TODO: don't know what this is
+  end
+  else if (eState = TMPVPlayerState.mpsLoading) then
+  begin
+    // TODO: don't know what this is
+    // how about "loaded"?
+  end
+  else if (eState = TMPVPlayerState.mpsUnk) then
+  begin
+    // TODO: don't know what this is
+  end
+  else if (eState = TMPVPlayerState.mpsErr) then
+  begin
+    //outputdebugstring(pchar('mpsErr'));
+  end
+  else if (eState = TMPVPlayerState.mpsEnd) then
+  begin
+    //outputdebugstring(pchar('mpsEnd'));
+    // We don't know if this "End" is just finished the video or closing down the app. Need to check that or else we get AV.
+    //frmMain.LoadNextVideo;
+  end;
+
+end;
+
+procedure TfrmMain.OnPlayerPropertyChanged(Sender: TObject; ID: MPVUInt64; Fmt: mpv_format; pData: Pointer);
+begin
+  // Use TThread.Synchronize() to update UI.
+
+  //Outputdebugstring(pchar('OnPlayerPropertyChanged'));
+end;
+
+procedure TfrmMain.OnPlayerProgress(Sender: TObject; CurSec, TotalSec: Double);
+begin
+  // Use TThread.Synchronize() to update UI.
+  //Self.Caption:=CurSec.ToString;
+  //Outputdebugstring(pchar('OnPlayerProgress:' + CurSec.ToString));
+end;
+
+procedure TfrmMain.OnPlayerErrorMessage(Sender: TObject; const Prefix: string; Level: Int32; const Msg: string);
+begin
+  // Use TThread.Synchronize() to update UI.
+
+  //Outputdebugstring(pchar('OnPlayerErrorMessage:'+ Msg));
 end;
 
 procedure TfrmMain.FormKeyDown(Sender: TObject; var Key: Word;
