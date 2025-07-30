@@ -1,17 +1,17 @@
 object frmShell: TfrmShell
   Left = 514
-  Height = 547
+  Height = 417
   Top = 37
-  Width = 690
+  Width = 878
   Align = alClient
   AllowDropFiles = True
-  AlphaBlend = True
   AlphaBlendValue = 250
   BorderStyle = bsNone
-  ClientHeight = 547
-  ClientWidth = 690
+  ClientHeight = 417
+  ClientWidth = 878
   Color = clBlack
   DesignTimePPI = 144
+  LCLVersion = '4.0.0.4'
   OnCreate = FormCreate
   OnDblClick = FormDblClick
   OnDestroy = FormDestroy
@@ -22,7 +22,7 @@ object frmShell: TfrmShell
   OnMouseUp = FormMouseUp
   OnShow = FormShow
   object Button1: TButton
-    Left = 288
+    Left = 384
     Height = 38
     Top = 48
     Width = 113
@@ -34,34 +34,33 @@ object frmShell: TfrmShell
     OnKeyDown = Button1KeyDown
   end
   object TrackBarVolume: TBCFluentSlider
-    Left = 608
-    Height = 200
-    Top = 136
-    Width = 48
+    Left = 544
+    Height = 48
+    Top = 336
+    Width = 200
     MaxValue = 1000
     Value = 1000
-    Orientation = pbVertical
     Align = alCustom
-    Anchors = [akRight]
+    Anchors = [akRight, akBottom]
     BorderSpacing.Top = 160
     BorderSpacing.Bottom = 360
     BorderSpacing.Around = 48
   end
-  object BCFluentSlider1: TBCFluentSlider
-    Left = 32
+  object SliderSeek: TBCFluentSlider
+    Left = 40
     Height = 48
-    Top = 416
-    Width = 624
+    Top = 286
+    Width = 792
     Anchors = [akLeft, akRight, akBottom]
   end
   object LabelElapsedTime: TLabel
-    Left = 40
+    Left = 56
     Height = 25
-    Top = 472
+    Top = 352
     Width = 140
     Anchors = [akLeft, akBottom]
     AutoSize = False
-    Caption = 'LabelElapsedTime'
+    Caption = '0'
     Font.Color = clWhite
     Font.Height = 25
     Font.Quality = fqAntialiased
@@ -71,13 +70,13 @@ object frmShell: TfrmShell
     ShowAccelChar = False
   end
   object LabelTotalTime: TLabel
-    Left = 536
+    Left = 232
     Height = 25
-    Top = 472
+    Top = 352
     Width = 116
-    Anchors = [akRight, akBottom]
+    Anchors = [akLeft, akBottom]
     AutoSize = False
-    Caption = 'LabelTotalTime'
+    Caption = '0'
     Font.Color = clWhite
     Font.Height = 25
     Font.Quality = fqAntialiased

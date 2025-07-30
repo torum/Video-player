@@ -41,6 +41,7 @@ type
     procedure FormShow(Sender: TObject);
     procedure IdleTimerMouseHideStopTimer(Sender: TObject);
     procedure IdleTimerMouseHideTimer(Sender: TObject);
+    procedure IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
     procedure IdleTimerOverlayControlsHideTimer(Sender: TObject);
 
   private
@@ -83,6 +84,8 @@ type
     FintAlphaBlendValue:integer;
 
     FintVolume:integer;
+    FdblCurSec: Double;
+    FdblTotalSec: Double;
 
     procedure OnPlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
     procedure OnPlayerPropertyChanged(Sender: TObject; ID: MPVUInt64; Fmt: mpv_format; pData: Pointer);
@@ -96,15 +99,18 @@ type
 
     procedure SetFullScreen_Universal(blnOn: boolean);
     procedure SetFullScreen_Win32(blnOn: boolean);
-    function GetCurrentMonitor():TMonitor;
-    function GetCurrentMonitorIndex():integer;
+
     procedure RestoreFormState;
     procedure StoreFormState;
     procedure ParsePramsAndBuildFileList; 
     procedure LoadSettings;
+    procedure DebugOutput(msg:string);
+    procedure UpdateSeekValue();
     {$ifdef windows}
     //procedure EnableBlur(blon:boolean);
     {$endif}
+    function GetCurrentMonitor():TMonitor;
+    function GetCurrentMonitorIndex():integer;
   public
     Player: TMPVBasePlayer;
     procedure ShowFullScreen(blnOn: boolean);
@@ -415,7 +421,7 @@ begin
   {$endif}
 
   frmShell.Show;
-  //frmShell.Visible:=false;
+  frmShell.Visible:=true;
   //frmShell.AlphaBlend:=true;
   //frmShell.AlphaBlendValue:=0;// set to max 255 or lower to show media controls when needed.
 
@@ -424,6 +430,7 @@ begin
 
   // TODO: Check errors.
   //outputdebugstring(pchar(errcode.ToString));
+  //DebugOutput('err at FormShow: ' + errcode.ToString);
 
   Player.SetHardwareDecoding('yes');
 
@@ -760,7 +767,7 @@ procedure TfrmMain.OnPlayerStatusChanged(Sender: TObject; eState: TMPVPlayerStat
 //var
   //plWidth,plHeight:int64;
 begin
-  // Use TThread.Synchronize() to update UI.
+  // Need TThread.Synchronize();
 
   if (eState = TMPVPlayerState.mpsPlay) then
   begin
@@ -814,23 +821,61 @@ end;
 
 procedure TfrmMain.OnPlayerPropertyChanged(Sender: TObject; ID: MPVUInt64; Fmt: mpv_format; pData: Pointer);
 begin
-  // Use TThread.Synchronize() to update UI.
-
-  //Outputdebugstring(pchar('OnPlayerPropertyChanged'));
+  // Need TThread.Synchronize();
+  //DebugOutput('OnPlayerPropertyChanged');
 end;
 
 procedure TfrmMain.OnPlayerProgress(Sender: TObject; CurSec, TotalSec: Double);
 begin
-  // Use TThread.Synchronize() to update UI.
-  //Self.Caption:=CurSec.ToString;
-  //Outputdebugstring(pchar('OnPlayerProgress:' + CurSec.ToString));
+  FdblCurSec := CurSec;
+
+  if (FdblTotalSec <> TotalSec) then FdblTotalSec := TotalSec;
+
+  // Need TThread.Synchronize();
+  TThread.Synchronize(nil,@UpdateSeekValue);
+end;
+
+procedure TfrmMain.UpdateSeekValue();
+var
+  curTimeElapsed,totalTime:longint;
+begin
+  //DebugOutput('OnPlayerProgress:' + FdblCurSec.ToString);
+
+  if (frmShell = nil) then exit;
+
+  try
+    curTimeElapsed := Round(FdblCurSec * 100);
+  except
+    curTimeElapsed :=0;
+    DebugOutput('curTimeElapsed := Round(FdblCurSec * 100)');
+  end;
+
+  if (frmShell.SliderSeek.Value <> curTimeElapsed) then
+  begin
+    frmShell.SliderSeek.Value:=curTimeElapsed;
+    frmShell.LabelElapsedTime.Caption := curTimeElapsed.ToString;
+  end;
+
+  try
+    totalTime := Round(FdblTotalSec * 100);
+  except
+    totalTime := 0;
+    DebugOutput('totalTime := Round(FdblTotalSec * 100)');
+  end;
+
+  if (curTimeElapsed >= totalTime) then exit;
+
+  if (frmShell.SliderSeek.MaxValue <> totalTime) then
+  begin
+    frmShell.SliderSeek.MaxValue:=totalTime;
+    frmShell.LabelTotalTime.Caption := totalTime.ToString;
+  end;
 end;
 
 procedure TfrmMain.OnPlayerErrorMessage(Sender: TObject; const Prefix: string; Level: Int32; const Msg: string);
 begin
-  // Use TThread.Synchronize() to update UI.
-
-  //Outputdebugstring(pchar('OnPlayerErrorMessage:'+ Msg));
+  // Need TThread.Synchronize();
+  //DebugOutput('OnPlayerErrorMessage:'+ Msg);
 end;
 
 procedure TfrmMain.FormKeyDown(Sender: TObject; var Key: Word;
@@ -962,7 +1007,7 @@ begin
   end;
 
   // Only if player is playing something.
-  if (plState = TMPVPlayerState.mpsPlay) then
+  if ((plState = TMPVPlayerState.mpsPlay) or (plState = TMPVPlayerState.mpsPause)) then
   begin
 
     // Skip
@@ -1359,14 +1404,22 @@ begin
   //end;
 end;
 
+procedure TfrmMain.IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
+begin
+  //ShowOverlayControls(); // not good.
+end;
+
 procedure TfrmMain.IdleTimerOverlayControlsHideTimer(Sender: TObject);
 begin
-  if (frmShell <> nil) then
-    //if (frmShell.AlphaBlendValue <> 0) then
-      //frmShell.AlphaBlendValue:=0;
-    if (frmShell.Visible) then
-      frmShell.Visible:=false;
+  if (frmShell = nil) then exit;
 
+  //if (frmShell.AlphaBlendValue <> 0) then
+    //frmShell.AlphaBlendValue:=0;
+
+  if (frmShell.Visible) then begin
+    // For now
+    //frmShell.Visible:=false;
+  end;
 end;
 
 procedure TfrmMain.RestoreFormState;
@@ -1454,6 +1507,13 @@ begin
   FstFileList.Free;
   FstDirectoryList.Free;
   FstPlaylistList.Free;
+end;
+
+procedure TfrmMain.DebugOutput(msg:string);
+begin
+  {$ifdef windows}
+  OutputDebugString(pchar(msg));
+  {$endif}
 end;
 
 {$ifdef windows}

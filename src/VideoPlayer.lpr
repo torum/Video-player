@@ -4,7 +4,7 @@ program VideoPlayer;
 
 uses
   {$IFDEF UNIX}
-  cthreads,
+  cthreads, cmem,
   {$ENDIF}
   {$IFDEF HASAMIGA}
   athreads,

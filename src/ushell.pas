@@ -16,7 +16,7 @@ type
   { TfrmShell }
 
   TfrmShell = class(TForm)
-    BCFluentSlider1: TBCFluentSlider;
+    SliderSeek: TBCFluentSlider;
     LabelElapsedTime: TLabel;
     LabelTotalTime: TLabel;
     TrackBarVolume: TBCFluentSlider;
@@ -82,7 +82,8 @@ procedure TfrmShell.FormShow(Sender: TObject);
 begin
   self.Color:=clBlack;
   SetWindowLongPtr(Self.Handle, GWL_EXSTYLE, GetWindowLongPtr(Self.Handle, GWL_EXSTYLE) or WS_EX_LAYERED);
-  SetLayeredWindowAttributes(Self.Handle, clBlack, 0, LWA_COLORKEY);
+  SetLayeredWindowAttributes(Self.Handle, clBlack, 0, LWA_COLORKEY); // Transparent with black
+  //SetLayeredWindowAttributes(Self.Handle, 0, 120, LWA_ALPHA); // Semi-transparent
 end;
 
 procedure TfrmShell.TrackBarVolumeKeyDown(Sender: TObject; var Key: Word;

@@ -7,6 +7,7 @@ object frmMain: TfrmMain
   AllowDropFiles = True
   Color = clBlack
   DesignTimePPI = 144
+  LCLVersion = '4.0.0.4'
   OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
@@ -41,8 +42,9 @@ object frmMain: TfrmMain
   end
   object IdleTimerOverlayControlsHide: TIdleTimer
     AutoEnabled = True
-    Interval = 1800
+    Interval = 1400
     OnTimer = IdleTimerOverlayControlsHideTimer
+    OnStopTimer = IdleTimerOverlayControlsHideStopTimer
     Left = 248
     Top = 40
   end
