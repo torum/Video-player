@@ -7,6 +7,7 @@ object frmMain: TfrmMain
   AllowDropFiles = True
   Color = clBlack
   DesignTimePPI = 144
+  LCLVersion = '4.0.0.4'
   OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
@@ -26,14 +27,6 @@ object frmMain: TfrmMain
     RootName = 'Application'
     ReadOnly = False
     Left = 56
-    Top = 40
-  end
-  object IdleTimerOverlayControlsShow: TIdleTimer
-    AutoEndEvent = itaOnIdleEnd
-    Enabled = False
-    OnTimer = IdleTimerOverlayControlsShowTimer
-    OnStopTimer = IdleTimerOverlayControlsShowStopTimer
-    Left = 248
     Top = 40
   end
   object PopupMenu1: TPopupMenu

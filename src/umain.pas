@@ -1,9 +1,6 @@
 unit UMain;
 
-// EnableBlur procedure requires delphi mode.
-// {$mode delphi}
 {$mode objfpc}{$H+}
-
 
 interface
 
@@ -19,7 +16,6 @@ type
   { TfrmMain }
 
   TfrmMain = class(TForm)
-    IdleTimerOverlayControlsShow: TIdleTimer;
     PopupMenu1: TPopupMenu;
     XMLConfig: TXMLConfig;
     procedure FormActivate(Sender: TObject);
@@ -39,8 +35,6 @@ type
     procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure FormShow(Sender: TObject);
-    procedure IdleTimerOverlayControlsShowStopTimer(Sender: TObject);
-    procedure IdleTimerOverlayControlsShowTimer(Sender: TObject);
 
   private
     // Main file lists
@@ -191,11 +185,14 @@ begin
   FstrInitialDir := '';
   {$endif}
 
-  // no longer in use
-  FintAlphaBlendValue := 90;
+
+  FintAlphaBlendValue := 100;
 
   // Load settings
   LoadSettings();
+
+  // temp:
+  FOptIncludeSubFolders := true;
 
   // Parse prams and build FileList
   ParsePramsAndBuildFileList();
@@ -421,10 +418,10 @@ begin
   {$endif}
 
   frmShell.Color:=clBlack;
-  frmShell.Show;
-  frmShell.Visible:=true;
   frmShell.AlphaBlend:=true;
   frmShell.AlphaBlendValue:=FintAlphaBlendValue;// set to max 255 or lower to show media controls when needed.
+  frmShell.Visible:=true;
+  frmShell.Show;
 
   // Int Player here.
   errcode := Player.InitPlayer(IntToStr(self.Handle), '', GetAppConfigDir(false), '');
@@ -911,6 +908,7 @@ begin
     begin
       ShowFullScreen(false);
     end;
+    HideOverlayControls();
     exit;
   end;
 
@@ -1030,12 +1028,12 @@ begin
     // Skip
     if (Key = VK_RIGHT) then
     begin
-      if (ssCtrl in Shift) then
+      if (ssShift in Shift) then
       begin
         // play next video
         LoadNextVideo;
       end
-      else if (ssShift in Shift) then
+      else if (ssCtrl in Shift) then
       begin
         Player.Seek(100,true);
       end else
@@ -1048,12 +1046,12 @@ begin
     // Back
     if (Key = VK_LEFT) or (Key = VK_BACK) then
     begin
-      if (ssCtrl in Shift) then
+      if (ssShift in Shift) then
       begin
         // Play previous video.
         LoadPrevVideo;
       end
-      else if (ssShift in Shift) then
+      else if (ssCtrl in Shift) then
       begin
         Player.Seek(-100,true);
       end else
@@ -1153,8 +1151,7 @@ begin
 
   // needed this. when using non-alppha way
   //frmShell.Repaint;
-                                    
-  IdleTimerOverlayControlsShow.Enabled:=false;
+
   frmShell.IdleTimerOverlayControlsHide.Enabled:=false;
   frmShell.IdleTimerOverlayControlsHide.Enabled:=true;
 
@@ -1375,7 +1372,7 @@ begin
       // Must be this order til here.
       //frmShell.Parent:=self;
       frmShell.ReAlign;
-      frmShell.Align:=alClient;
+      frmShell.Align:=alBottom;
       //frmShell.Visible:=true;
       frmShell.Refresh;
       frmShell.Repaint;
@@ -1420,7 +1417,7 @@ begin
     end;
     }
     frmShell.ReAlign;
-    frmShell.Align:=alClient;
+    frmShell.Align:=alBottom;
     frmShell.Refresh;
     frmShell.Repaint;
 
@@ -1452,37 +1449,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.IdleTimerOverlayControlsShowStopTimer(Sender: TObject);
-begin
-  DebugOutput('IdleTimerOverlayControlsShow_StopTimer');
-  {
-  Screen.Cursor:= crDefault;
-  Self.Cursor:=crDefault;  }
-  //ShowOverlayControls();
 
-end;
-
-procedure TfrmMain.IdleTimerOverlayControlsShowTimer(Sender: TObject);
-begin
-  DebugOutput('IdleTimerOverlayControlsShow_Timer');
-  {
-  //if not FisPopupMenuShowing then
-  //begin
-    Screen.Cursor:= crNone;
-    Self.Cursor:=crNone;
-  //end;
-
-  //if (frmShell.AlphaBlendValue <> 0) then
-    //
-
-  if (frmShell = nil) then exit;
-  if (frmShell.Visible) then begin
-    frmShell.Visible:=false;
-  end;
-  }
-  //HideOverlayControls();
-
-end;
 
 procedure TfrmMain.RestoreFormState;
 var

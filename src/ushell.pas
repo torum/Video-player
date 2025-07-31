@@ -66,8 +66,6 @@ uses
 procedure TfrmShell.FormCreate(Sender: TObject);
 begin
 
-  //self.Color:=clBlack;
-
   RoundedImage.Picture.LoadFromResourceName(Hinstance,'FLUENT_PLAY_CIRCLE_48_FILLED');
   //Image1.Picture.LoadFromResourceName(Hinstance,'48_TRANSPARENT');
 end;
@@ -87,7 +85,7 @@ end;
 
 procedure TfrmShell.FormShow(Sender: TObject);
 begin
-  //self.Color:=clBlack;
+  self.Color:=clBlack;
   //SetWindowLongPtr(Self.Handle, GWL_EXSTYLE, GetWindowLongPtr(Self.Handle, GWL_EXSTYLE) or WS_EX_LAYERED);
   //SetLayeredWindowAttributes(Self.Handle, clBlack, 0, LWA_COLORKEY); // Transparent with black
   //SetLayeredWindowAttributes(Self.Handle, 0, 90, LWA_ALPHA); // Semi-transparent

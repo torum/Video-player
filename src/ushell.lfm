@@ -1,14 +1,14 @@
 object frmShell: TfrmShell
   Left = 514
-  Height = 417
+  Height = 150
   Top = 37
   Width = 878
-  Align = alClient
+  Align = alBottom
   AllowDropFiles = True
   AlphaBlend = True
   AlphaBlendValue = 250
   BorderStyle = bsNone
-  ClientHeight = 417
+  ClientHeight = 150
   ClientWidth = 878
   Color = clBlack
   DesignTimePPI = 144
@@ -24,7 +24,7 @@ object frmShell: TfrmShell
   object Button1: TButton
     Left = 384
     Height = 38
-    Top = 48
+    Top = 32
     Width = 113
     Caption = 'Button1'
     TabOrder = 0
@@ -36,7 +36,7 @@ object frmShell: TfrmShell
   object TrackBarVolume: TBCFluentSlider
     Left = 632
     Height = 48
-    Top = 336
+    Top = 69
     Width = 200
     MaxValue = 1000
     Value = 1000
@@ -49,14 +49,14 @@ object frmShell: TfrmShell
   object SliderSeek: TBCFluentSlider
     Left = 40
     Height = 48
-    Top = 286
+    Top = 19
     Width = 792
     Anchors = [akLeft, akRight, akBottom]
   end
   object LabelTimeFormatted: TLabel
     Left = 64
     Height = 30
-    Top = 351
+    Top = 84
     Width = 45
     Anchors = [akLeft, akBottom]
     Caption = '0 / 0'
@@ -67,7 +67,7 @@ object frmShell: TfrmShell
   object RoundedImage: TBCRoundedImage
     Left = 416
     Height = 48
-    Top = 344
+    Top = 77
     Width = 48
     Style = isRoundedRectangle
     BorderStyle = []
@@ -83,7 +83,7 @@ object frmShell: TfrmShell
     OnTimer = IdleTimerOverlayControlsHideTimer
     OnStartTimer = IdleTimerOverlayControlsHideStartTimer
     OnStopTimer = IdleTimerOverlayControlsHideStopTimer
-    Left = 112
-    Top = 56
+    Left = 176
+    Top = 160
   end
 end
