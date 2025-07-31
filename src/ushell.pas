@@ -7,7 +7,8 @@ interface
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Menus, StdCtrls,
   ComCtrls, BCImageButton, BCFluentSlider, BGRAFlashProgressBar,
-  BCRadialProgressBar, BCButton, BCSVGButton, BGRAImageList,LCLType, ExtCtrls,
+  BCRadialProgressBar, BCButton, BCSVGButton, BGRAImageList, BCRoundedImage,
+  LCLType, ExtCtrls,
   {$ifdef windows}Windows, DWMApi, windirs, win32titlestyler,{$endif}
   MPVBasePlayer, Types;
 
@@ -16,9 +17,10 @@ type
   { TfrmShell }
 
   TfrmShell = class(TForm)
+    IdleTimerOverlayControlsHide: TIdleTimer;
+    RoundedImage: TBCRoundedImage;
+    LabelTimeFormatted: TLabel;
     SliderSeek: TBCFluentSlider;
-    LabelElapsedTime: TLabel;
-    LabelTotalTime: TLabel;
     TrackBarVolume: TBCFluentSlider;
     Button1: TButton;
     procedure Button1Click(Sender: TObject);
@@ -35,6 +37,11 @@ type
     procedure FormMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure FormShow(Sender: TObject);
+    procedure IdleTimerOverlayControlsHideStartTimer(Sender: TObject);
+    procedure IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
+    procedure IdleTimerOverlayControlsHideTimer(Sender: TObject);
+    procedure Image1Click(Sender: TObject);
+    procedure RoundedImageClick(Sender: TObject);
     procedure TrackBarVolumeKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
   private
@@ -61,8 +68,8 @@ begin
 
   //self.Color:=clBlack;
 
-  //Image1.Picture.LoadFromResourceName(Hinstance,'FLUENT_PLAY_CIRCLE_78_FILLED');
-
+  RoundedImage.Picture.LoadFromResourceName(Hinstance,'FLUENT_PLAY_CIRCLE_48_FILLED');
+  //Image1.Picture.LoadFromResourceName(Hinstance,'48_TRANSPARENT');
 end;
 
 procedure TfrmShell.Button1Click(Sender: TObject);
@@ -80,10 +87,105 @@ end;
 
 procedure TfrmShell.FormShow(Sender: TObject);
 begin
-  self.Color:=clBlack;
-  SetWindowLongPtr(Self.Handle, GWL_EXSTYLE, GetWindowLongPtr(Self.Handle, GWL_EXSTYLE) or WS_EX_LAYERED);
-  SetLayeredWindowAttributes(Self.Handle, clBlack, 0, LWA_COLORKEY); // Transparent with black
-  //SetLayeredWindowAttributes(Self.Handle, 0, 120, LWA_ALPHA); // Semi-transparent
+  //self.Color:=clBlack;
+  //SetWindowLongPtr(Self.Handle, GWL_EXSTYLE, GetWindowLongPtr(Self.Handle, GWL_EXSTYLE) or WS_EX_LAYERED);
+  //SetLayeredWindowAttributes(Self.Handle, clBlack, 0, LWA_COLORKEY); // Transparent with black
+  //SetLayeredWindowAttributes(Self.Handle, 0, 90, LWA_ALPHA); // Semi-transparent
+
+  //SetWindowPos(Self.Handle, HWND_TOPMOST, self.Left, self.Top, self.Width, self.Height, SWP_NOSIZE);
+  IdleTimerOverlayControlsHide.Enabled:=true;
+end;
+
+procedure TfrmShell.IdleTimerOverlayControlsHideStartTimer(Sender: TObject);
+begin
+  //frmMain.DebugOutput('StartTimer');
+end;
+
+procedure TfrmShell.IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
+begin
+  {
+  IdleTimerOverlayControlsHide.Enabled:=false;
+
+  Screen.Cursor:= crDefault;
+  Self.Cursor:=crDefault;
+  frmMain.Cursor:=crDefault;
+
+  if (self.AlphaBlendValue = 0) then
+  begin
+    frmMain.ShowOverlayControls();
+  end;
+  }
+  {
+  if (self.Visible = false) then begin
+    frmMain.ShowOverlayControls();
+  end;
+  }
+  //IdleTimerOverlayControlsHide.Enabled:=false;
+end;
+
+procedure TfrmShell.IdleTimerOverlayControlsHideTimer(Sender: TObject);
+begin
+  //frmMain.DebugOutput('Timer');
+
+  IdleTimerOverlayControlsHide.Enabled:=false;
+
+  frmMain.HideOverlayControls;
+
+  IdleTimerOverlayControlsHide.Enabled:=false;
+end;
+
+procedure TfrmShell.Image1Click(Sender: TObject);
+begin
+
+end;
+
+procedure TfrmShell.RoundedImageClick(Sender: TObject);
+var
+  plState:TMPVPlayerState;
+begin
+  // Check player status.
+  plState := frmMain.Player.GetState;
+
+  if (plState = TMPVPlayerState.mpsPlay) then
+  begin
+    frmMain.Player.Pause;
+  end
+  else if (plState = TMPVPlayerState.mpsPause) then
+  begin
+    frmMain.Player.Resume;
+  end
+  else if (plState = TMPVPlayerState.mpsStop) then // TODO: need to check.
+  begin
+     // do nothing. probably closing.
+    frmMain.DebugOutput('TMPVPlayerState.mpsStop @RoundedImageClick');
+  end
+  else if (plState = TMPVPlayerState.mpsEnd) then
+  begin
+     // TODO: mpsEnd is also fired when closing? need to check.
+    frmMain.DebugOutput('TMPVPlayerState.mpsEnd @RoundedImageClick');
+  end;
+
+
+  {
+  else if (plState = TMPVPlayerState.mpsUnk) then
+  begin
+    outputdebugstring(pchar('TMPVPlayerState.mpsUnk'));
+  end
+  else if (plState = TMPVPlayerState.mpsErr) then
+  begin
+    outputdebugstring(pchar('TMPVPlayerState.mpsErr'));
+  end
+  else if (plState = TMPVPlayerState.mpsStep) then
+  begin
+    outputdebugstring(pchar('TMPVPlayerState.mpsStep'));
+  end else if (plState = TMPVPlayerState.mpsLoading) then
+  begin
+    outputdebugstring(pchar('TMPVPlayerState.mpsLoading'));
+  end else
+  begin
+    outputdebugstring(pchar('TMPVPlayerState else'));
+  end;
+  }
 end;
 
 procedure TfrmShell.TrackBarVolumeKeyDown(Sender: TObject; var Key: Word;

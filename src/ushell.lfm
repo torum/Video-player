@@ -5,13 +5,13 @@ object frmShell: TfrmShell
   Width = 878
   Align = alClient
   AllowDropFiles = True
+  AlphaBlend = True
   AlphaBlendValue = 250
   BorderStyle = bsNone
   ClientHeight = 417
   ClientWidth = 878
   Color = clBlack
   DesignTimePPI = 144
-  LCLVersion = '4.0.0.4'
   OnCreate = FormCreate
   OnDblClick = FormDblClick
   OnDestroy = FormDestroy
@@ -34,7 +34,7 @@ object frmShell: TfrmShell
     OnKeyDown = Button1KeyDown
   end
   object TrackBarVolume: TBCFluentSlider
-    Left = 544
+    Left = 632
     Height = 48
     Top = 336
     Width = 200
@@ -53,36 +53,37 @@ object frmShell: TfrmShell
     Width = 792
     Anchors = [akLeft, akRight, akBottom]
   end
-  object LabelElapsedTime: TLabel
-    Left = 56
-    Height = 25
-    Top = 352
-    Width = 140
+  object LabelTimeFormatted: TLabel
+    Left = 64
+    Height = 30
+    Top = 351
+    Width = 45
     Anchors = [akLeft, akBottom]
-    AutoSize = False
-    Caption = '0'
+    Caption = '0 / 0'
     Font.Color = clWhite
-    Font.Height = 25
-    Font.Quality = fqAntialiased
-    OptimalFill = True
-    ParentColor = False
+    Font.Height = -22
     ParentFont = False
-    ShowAccelChar = False
   end
-  object LabelTotalTime: TLabel
-    Left = 232
-    Height = 25
-    Top = 352
-    Width = 116
-    Anchors = [akLeft, akBottom]
-    AutoSize = False
-    Caption = '0'
-    Font.Color = clWhite
-    Font.Height = 25
-    Font.Quality = fqAntialiased
-    OptimalFill = True
-    ParentColor = False
-    ParentFont = False
-    ShowAccelChar = False
+  object RoundedImage: TBCRoundedImage
+    Left = 416
+    Height = 48
+    Top = 344
+    Width = 48
+    Style = isRoundedRectangle
+    BorderStyle = []
+    Rounding = 24
+    Quality = rfBestQuality
+    Proportional = True
+    Anchors = [akBottom]
+    OnClick = RoundedImageClick
+  end
+  object IdleTimerOverlayControlsHide: TIdleTimer
+    Enabled = False
+    Interval = 2400
+    OnTimer = IdleTimerOverlayControlsHideTimer
+    OnStartTimer = IdleTimerOverlayControlsHideStartTimer
+    OnStopTimer = IdleTimerOverlayControlsHideStopTimer
+    Left = 112
+    Top = 56
   end
 end

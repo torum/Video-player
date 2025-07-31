@@ -19,8 +19,7 @@ type
   { TfrmMain }
 
   TfrmMain = class(TForm)
-    IdleTimerMouseHide: TIdleTimer;
-    IdleTimerOverlayControlsHide: TIdleTimer;
+    IdleTimerOverlayControlsShow: TIdleTimer;
     PopupMenu1: TPopupMenu;
     XMLConfig: TXMLConfig;
     procedure FormActivate(Sender: TObject);
@@ -33,16 +32,15 @@ type
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure FormMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseEnter(Sender: TObject);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FormMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure FormShow(Sender: TObject);
-    procedure IdleTimerMouseHideStopTimer(Sender: TObject);
-    procedure IdleTimerMouseHideTimer(Sender: TObject);
-    procedure IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
-    procedure IdleTimerOverlayControlsHideTimer(Sender: TObject);
+    procedure IdleTimerOverlayControlsShowStopTimer(Sender: TObject);
+    procedure IdleTimerOverlayControlsShowTimer(Sender: TObject);
 
   private
     // Main file lists
@@ -104,7 +102,6 @@ type
     procedure StoreFormState;
     procedure ParsePramsAndBuildFileList; 
     procedure LoadSettings;
-    procedure DebugOutput(msg:string);
     procedure UpdateSeekValue();
     {$ifdef windows}
     //procedure EnableBlur(blon:boolean);
@@ -116,8 +113,10 @@ type
     procedure ShowFullScreen(blnOn: boolean);
     procedure LoadNextVideo;
     procedure LoadPrevVideo;
-    procedure SetVolume(newVol:integer);
+    procedure SetVolume(newVol:double);
     procedure ShowOverlayControls;
+    procedure HideOverlayControls();
+    procedure DebugOutput(msg:string);
     Property IntCurrentFileIndex: integer read FintCurrentFileIndex;
     property FileList: TStringList read FstFileList;
     property CurrentMonitor:TMonitor read GetCurrentMonitor;
@@ -193,10 +192,11 @@ begin
   {$endif}
 
   // no longer in use
-  FintAlphaBlendValue := 20;
+  FintAlphaBlendValue := 90;
 
   // Load settings
   LoadSettings();
+
   // Parse prams and build FileList
   ParsePramsAndBuildFileList();
 
@@ -420,10 +420,11 @@ begin
   ApplyFormDarkTitle(self, true, false); // needed to force=false bacause of the glich when changing to fullscreen.
   {$endif}
 
+  frmShell.Color:=clBlack;
   frmShell.Show;
   frmShell.Visible:=true;
-  //frmShell.AlphaBlend:=true;
-  //frmShell.AlphaBlendValue:=0;// set to max 255 or lower to show media controls when needed.
+  frmShell.AlphaBlend:=true;
+  frmShell.AlphaBlendValue:=FintAlphaBlendValue;// set to max 255 or lower to show media controls when needed.
 
   // Int Player here.
   errcode := Player.InitPlayer(IntToStr(self.Handle), '', GetAppConfigDir(false), '');
@@ -456,6 +457,7 @@ begin
   Player.OnProgress:=@OnPlayerProgress; //TMPVProgressEvent
   Player.OnErrorMessage:=@OnPlayerErrorMessage;
 
+  frmShell.TrackBarVolume.Value:=FintVolume;
   SetVolume(FintVolume);
 
   // Need to be here in FormShow. not in the OnCreate.
@@ -829,10 +831,23 @@ procedure TfrmMain.OnPlayerProgress(Sender: TObject; CurSec, TotalSec: Double);
 begin
   FdblCurSec := CurSec;
 
-  if (FdblTotalSec <> TotalSec) then FdblTotalSec := TotalSec;
+  if (FdblTotalSec <> TotalSec) then
+    FdblTotalSec := TotalSec;
 
   // Need TThread.Synchronize();
-  TThread.Synchronize(nil,@UpdateSeekValue);
+  TThread.Queue(nil,@UpdateSeekValue);
+  //TThread.Synchronize(nil,@UpdateSeekValue);
+
+  {
+  TThread.Synchronize(
+    nil,
+    procedure
+      begin
+        ..
+      end
+  );
+  }
+
 end;
 
 procedure TfrmMain.UpdateSeekValue();
@@ -842,34 +857,39 @@ begin
   //DebugOutput('OnPlayerProgress:' + FdblCurSec.ToString);
 
   if (frmShell = nil) then exit;
+  frmShell.SliderSeek.MinValue:=0;
 
   try
-    curTimeElapsed := Round(FdblCurSec * 100);
-  except
-    curTimeElapsed :=0;
-    DebugOutput('curTimeElapsed := Round(FdblCurSec * 100)');
-  end;
-
-  if (frmShell.SliderSeek.Value <> curTimeElapsed) then
-  begin
-    frmShell.SliderSeek.Value:=curTimeElapsed;
-    frmShell.LabelElapsedTime.Caption := curTimeElapsed.ToString;
-  end;
-
-  try
-    totalTime := Round(FdblTotalSec * 100);
+    totalTime := Round(FdblTotalSec * 10);
   except
     totalTime := 0;
-    DebugOutput('totalTime := Round(FdblTotalSec * 100)');
+  end;
+
+  if (totalTime < 2) then exit;
+
+  if (frmShell.SliderSeek.MaxValue <> totalTime) then
+  begin
+    frmShell.SliderSeek.MaxValue := totalTime;
+    //frmShell.LabelTotalTime.Caption := totalTime.ToString;
+  end;
+
+  try
+    curTimeElapsed := Round(FdblCurSec * 10);
+  except
+    curTimeElapsed :=0;
+    exit;
   end;
 
   if (curTimeElapsed >= totalTime) then exit;
 
-  if (frmShell.SliderSeek.MaxValue <> totalTime) then
+  if (frmShell.SliderSeek.Value <> curTimeElapsed) then
   begin
-    frmShell.SliderSeek.MaxValue:=totalTime;
-    frmShell.LabelTotalTime.Caption := totalTime.ToString;
+    frmShell.SliderSeek.Value := curTimeElapsed;
+    //frmShell.LabelElapsedTime.Caption := curTimeElapsed.ToString;
   end;
+
+  frmShell.LabelTimeFormatted.Caption := curTimeElapsed.ToString + ' / ' + totalTime.ToString;
+
 end;
 
 procedure TfrmMain.OnPlayerErrorMessage(Sender: TObject; const Prefix: string; Level: Int32; const Msg: string);
@@ -926,6 +946,7 @@ begin
     begin             
       //outputdebugstring(pchar('TMPVPlayerState.mpsPlay'));
       Player.Pause;
+      ShowOverlayControls();
     end
     else if (plState = TMPVPlayerState.mpsPause) then
     begin                   
@@ -979,12 +1000,10 @@ begin
     curVol := Player.GetVolume;
     if (ssCtrl in Shift) then
     begin
-      Player.SetVolume(curVol+10);
-      frmShell.TrackBarVolume.Value:=Trunc(curVol)+10;
+      SetVolume(curVol+10);
     end else
     begin
-      Player.SetVolume(curVol+5);
-      frmShell.TrackBarVolume.Value:=Trunc(curVol)+5;
+      SetVolume(curVol+5);
     end;
     // Show controls
     ShowOverlayControls();
@@ -995,12 +1014,10 @@ begin
     curVol := Player.GetVolume;
     if (ssCtrl in Shift) then
     begin
-      Player.SetVolume(curVol-10);
-      frmShell.TrackBarVolume.Value:=Trunc(curVol)-10;
+      SetVolume(curVol-10);
     end else
     begin
-      Player.SetVolume(curVol-5);
-      frmShell.TrackBarVolume.Value:=Trunc(curVol)-5;
+      SetVolume(curVol-5);
     end;
     // Show controls
     ShowOverlayControls();
@@ -1025,6 +1042,7 @@ begin
       begin
         Player.Seek(10,true);
       end;
+      ShowOverlayControls();
     end;
 
     // Back
@@ -1042,6 +1060,7 @@ begin
       begin
         Player.Seek(-10,true);
       end;
+      ShowOverlayControls();
     end;
 
 
@@ -1108,32 +1127,71 @@ begin
       FisMouseDown:=true;
     end;
     mbRight: begin
-      // Right click show controls.
-      ShowOverlayControls();
+      // Right click show popupmenu.
+      // when mouse up
     end;
   end;
+end;
+
+procedure TfrmMain.FormMouseEnter(Sender: TObject);
+begin
+  //DebugOutput('FormMouseEnter');
+  //ShowOverlayControls();   not really good.
 end;
 
 procedure TfrmMain.ShowOverlayControls();
 var
   curVol:double;
 begin
+  Screen.Cursor:= crDefault;
+  Self.Cursor:=crDefault;
+
+  // Make visible
+  frmShell.AlphaBlendValue:=FintAlphaBlendValue;
+  //frmShell.Visible:=true;
+  frmShell.Cursor:=crDefault;
+
+  // needed this. when using non-alppha way
+  //frmShell.Repaint;
+                                    
+  IdleTimerOverlayControlsShow.Enabled:=false;
+  frmShell.IdleTimerOverlayControlsHide.Enabled:=false;
+  frmShell.IdleTimerOverlayControlsHide.Enabled:=true;
+
+  if (Player = nil) then exit; // we are closing.
+
   // Update volume value
   curVol := Player.GetVolume;
   frmShell.TrackBarVolume.Value:=Trunc(curVol);
+end;
 
-  // Make visible
-  //frmShell.AlphaBlendValue:=FintAlphaBlendValue;
-  frmShell.Visible:=true;
+procedure TfrmMain.HideOverlayControls();
+begin
+  //if not FisPopupMenuShowing then
+  Screen.Cursor:= crNone;
+  Self.Cursor:=crNone;
+  frmShell.Cursor:=crNone;
 
+  if (frmShell.AlphaBlendValue <> 0) then
+  begin
+    frmShell.AlphaBlendValue:=0;
+  end;
 
-  // needed this.
-  frmShell.Repaint;
+  if (frmShell.Visible) then begin
+    //frmShell.Visible:=false;
+  end;
+                     
+  frmShell.IdleTimerOverlayControlsHide.Enabled:=false;
 end;
 
 procedure TfrmMain.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
+  if ((not FisMouseDown) and (not FisMoving)) then
+  begin
+    ShowOverlayControls();
+  end;
+
   if (frmMain.IsFullscreen) then exit;
 
   if (FisMouseDown) then
@@ -1147,9 +1205,13 @@ end;
 procedure TfrmMain.FormMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
+  if ((not FisMouseDown) and (not FisMoving)) then
+  begin
+    ShowOverlayControls();
+  end;
+
   FisMouseDown:=false;
   FisMoving:=False;
-
 end;
 
 procedure TfrmMain.FormMouseWheel(Sender: TObject; Shift: TShiftState;
@@ -1172,11 +1234,12 @@ begin
   ShowOverlayControls();
 end;
 
-procedure TfrmMain.SetVolume(newVol:integer);
+procedure TfrmMain.SetVolume(newVol:double);
 begin
     Player.SetVolume(newVol);
+    frmShell.TrackBarVolume.Value:=Trunc(newVol);
     // for settings save.
-    FintVolume:=newVol;
+    FintVolume:=Trunc(newVol);
 end;
 
 procedure TfrmMain.ShowFullScreen(blnOn: boolean);
@@ -1389,37 +1452,36 @@ begin
   end;
 end;
 
-procedure TfrmMain.IdleTimerMouseHideStopTimer(Sender: TObject);
+procedure TfrmMain.IdleTimerOverlayControlsShowStopTimer(Sender: TObject);
 begin
+  DebugOutput('IdleTimerOverlayControlsShow_StopTimer');
+  {
   Screen.Cursor:= crDefault;
-  Self.Cursor:=crDefault;
+  Self.Cursor:=crDefault;  }
+  //ShowOverlayControls();
+
 end;
 
-procedure TfrmMain.IdleTimerMouseHideTimer(Sender: TObject);
+procedure TfrmMain.IdleTimerOverlayControlsShowTimer(Sender: TObject);
 begin
+  DebugOutput('IdleTimerOverlayControlsShow_Timer');
+  {
   //if not FisPopupMenuShowing then
   //begin
     Screen.Cursor:= crNone;
     Self.Cursor:=crNone;
   //end;
-end;
-
-procedure TfrmMain.IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
-begin
-  //ShowOverlayControls(); // not good.
-end;
-
-procedure TfrmMain.IdleTimerOverlayControlsHideTimer(Sender: TObject);
-begin
-  if (frmShell = nil) then exit;
 
   //if (frmShell.AlphaBlendValue <> 0) then
-    //frmShell.AlphaBlendValue:=0;
+    //
 
+  if (frmShell = nil) then exit;
   if (frmShell.Visible) then begin
-    // For now
-    //frmShell.Visible:=false;
+    frmShell.Visible:=false;
   end;
+  }
+  //HideOverlayControls();
+
 end;
 
 procedure TfrmMain.RestoreFormState;
@@ -1491,7 +1553,6 @@ begin
   XMLConfig.SetValue('/InitDir/Path',widestring(FstrInitialDir));
 
   XMLConfig.SetValue('/State/Volume',FintVolume);
-
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);

@@ -7,7 +7,6 @@ object frmMain: TfrmMain
   AllowDropFiles = True
   Color = clBlack
   DesignTimePPI = 144
-  LCLVersion = '4.0.0.4'
   OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
@@ -17,6 +16,7 @@ object frmMain: TfrmMain
   OnDropFiles = FormDropFiles
   OnKeyDown = FormKeyDown
   OnMouseDown = FormMouseDown
+  OnMouseEnter = FormMouseEnter
   OnMouseMove = FormMouseMove
   OnMouseUp = FormMouseUp
   OnMouseWheel = FormMouseWheel
@@ -28,24 +28,16 @@ object frmMain: TfrmMain
     Left = 56
     Top = 40
   end
-  object IdleTimerMouseHide: TIdleTimer
-    AutoEnabled = True
-    Interval = 1500
-    OnTimer = IdleTimerMouseHideTimer
-    OnStopTimer = IdleTimerMouseHideStopTimer
+  object IdleTimerOverlayControlsShow: TIdleTimer
+    AutoEndEvent = itaOnIdleEnd
+    Enabled = False
+    OnTimer = IdleTimerOverlayControlsShowTimer
+    OnStopTimer = IdleTimerOverlayControlsShowStopTimer
     Left = 248
     Top = 40
   end
   object PopupMenu1: TPopupMenu
     Left = 56
     Top = 200
-  end
-  object IdleTimerOverlayControlsHide: TIdleTimer
-    AutoEnabled = True
-    Interval = 1400
-    OnTimer = IdleTimerOverlayControlsHideTimer
-    OnStopTimer = IdleTimerOverlayControlsHideStopTimer
-    Left = 248
-    Top = 40
   end
 end
