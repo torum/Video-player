@@ -12,12 +12,15 @@ object frmShell: TfrmShell
   ClientWidth = 878
   Color = clBlack
   DesignTimePPI = 144
+  LCLVersion = '4.0.0.4'
   OnCreate = FormCreate
   OnDblClick = FormDblClick
   OnDestroy = FormDestroy
   OnDropFiles = FormDropFiles
   OnKeyDown = FormKeyDown
   OnMouseDown = FormMouseDown
+  OnMouseEnter = FormMouseEnter
+  OnMouseLeave = FormMouseLeave
   OnMouseMove = FormMouseMove
   OnMouseUp = FormMouseUp
   OnShow = FormShow
@@ -34,7 +37,7 @@ object frmShell: TfrmShell
     OnKeyDown = Button1KeyDown
   end
   object TrackBarVolume: TBCFluentSlider
-    Left = 632
+    Left = 600
     Height = 48
     Top = 69
     Width = 200

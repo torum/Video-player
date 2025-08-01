@@ -33,6 +33,8 @@ type
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure FormMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseEnter(Sender: TObject);
+    procedure FormMouseLeave(Sender: TObject);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FormMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
@@ -48,6 +50,9 @@ type
     FPos: TPoint;
     FisMouseDown: boolean;
     FisMoving: boolean;
+    FblnInhibitIdleHideControls: boolean;
+    public
+      Property IsInhibitIdleHideControls:boolean read FblnInhibitIdleHideControls;
   end;
 
 var
@@ -85,12 +90,21 @@ end;
 
 procedure TfrmShell.FormShow(Sender: TObject);
 begin
+
+  // This code block uses winapi to set lyaered window with background transparent.
+  // However, the edges of the controls are really really ugry.
+  {
   self.Color:=clBlack;
-  //SetWindowLongPtr(Self.Handle, GWL_EXSTYLE, GetWindowLongPtr(Self.Handle, GWL_EXSTYLE) or WS_EX_LAYERED);
-  //SetLayeredWindowAttributes(Self.Handle, clBlack, 0, LWA_COLORKEY); // Transparent with black
+  SetWindowLongPtr(Self.Handle, GWL_EXSTYLE, GetWindowLongPtr(Self.Handle, GWL_EXSTYLE) or WS_EX_LAYERED);
+  SetLayeredWindowAttributes(Self.Handle, clBlack, 0, LWA_COLORKEY); // Transparent with black
+  }
+
+  // This one sets the whole window transparent.
+  // However, this is easly archived with alpha blend with more controlability.
   //SetLayeredWindowAttributes(Self.Handle, 0, 90, LWA_ALPHA); // Semi-transparent
 
   //SetWindowPos(Self.Handle, HWND_TOPMOST, self.Left, self.Top, self.Width, self.Height, SWP_NOSIZE);
+
   IdleTimerOverlayControlsHide.Enabled:=true;
 end;
 
@@ -101,35 +115,14 @@ end;
 
 procedure TfrmShell.IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
 begin
-  {
-  IdleTimerOverlayControlsHide.Enabled:=false;
 
-  Screen.Cursor:= crDefault;
-  Self.Cursor:=crDefault;
-  frmMain.Cursor:=crDefault;
-
-  if (self.AlphaBlendValue = 0) then
-  begin
-    frmMain.ShowOverlayControls();
-  end;
-  }
-  {
-  if (self.Visible = false) then begin
-    frmMain.ShowOverlayControls();
-  end;
-  }
-  //IdleTimerOverlayControlsHide.Enabled:=false;
 end;
 
 procedure TfrmShell.IdleTimerOverlayControlsHideTimer(Sender: TObject);
 begin
   //frmMain.DebugOutput('Timer');
 
-  IdleTimerOverlayControlsHide.Enabled:=false;
-
   frmMain.HideOverlayControls;
-
-  IdleTimerOverlayControlsHide.Enabled:=false;
 end;
 
 procedure TfrmShell.Image1Click(Sender: TObject);
@@ -239,9 +232,29 @@ begin
   end;
 end;
 
+procedure TfrmShell.FormMouseEnter(Sender: TObject);
+begin
+  frmMain.DebugOutput('TfrmShell.FormMouseEnter');
+  //frmMain.ShowOverlayControls();
+  //IdleTimerOverlayControlsHide.Enabled:=false;
+  FblnInhibitIdleHideControls:=true;
+end;
+
+procedure TfrmShell.FormMouseLeave(Sender: TObject);
+begin
+  frmMain.DebugOutput('TfrmShell.FormMouseLeave');
+  //IdleTimerOverlayControlsHide.Enabled:=true;
+  FblnInhibitIdleHideControls:=false;
+end;
+
 procedure TfrmShell.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
+  if ((not FisMouseDown) and (not FisMoving)) then
+  begin
+    frmMain.ShowOverlayControls();
+  end;
+
   if (frmMain.IsFullscreen) then exit;
 
   if (FisMouseDown) then

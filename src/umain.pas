@@ -892,7 +892,7 @@ end;
 procedure TfrmMain.OnPlayerErrorMessage(Sender: TObject; const Prefix: string; Level: Int32; const Msg: string);
 begin
   // Need TThread.Synchronize();
-  //DebugOutput('OnPlayerErrorMessage:'+ Msg);
+  DebugOutput('OnPlayerErrorMessage:'+ Msg);
 end;
 
 procedure TfrmMain.FormKeyDown(Sender: TObject; var Key: Word;
@@ -1134,7 +1134,7 @@ end;
 procedure TfrmMain.FormMouseEnter(Sender: TObject);
 begin
   //DebugOutput('FormMouseEnter');
-  //ShowOverlayControls();   not really good.
+  //ShowOverlayControls();   //not really good.
 end;
 
 procedure TfrmMain.ShowOverlayControls();
@@ -1152,6 +1152,7 @@ begin
   // needed this. when using non-alppha way
   //frmShell.Repaint;
 
+  // re-enable
   frmShell.IdleTimerOverlayControlsHide.Enabled:=false;
   frmShell.IdleTimerOverlayControlsHide.Enabled:=true;
 
@@ -1164,6 +1165,13 @@ end;
 
 procedure TfrmMain.HideOverlayControls();
 begin
+  frmShell.IdleTimerOverlayControlsHide.Enabled:=false;
+  if (frmShell.IsInhibitIdleHideControls) then
+  begin
+    frmShell.IdleTimerOverlayControlsHide.Enabled:=true;
+    exit;
+  end;
+
   //if not FisPopupMenuShowing then
   Screen.Cursor:= crNone;
   Self.Cursor:=crNone;
@@ -1448,8 +1456,6 @@ begin
     end;
   end;
 end;
-
-
 
 procedure TfrmMain.RestoreFormState;
 var
