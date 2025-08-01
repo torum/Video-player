@@ -1,10 +1,10 @@
 # Video-player
 
-Simple and minimum, yet configurable [mpv](https://mpv.io/) frontend based on [LibMPVDelphi](https://github.com/nbuyer/libmpvdelphi).
+Simple and minimum, yet another [mpv](https://mpv.io/) frontend based on [LibMPVDelphi](https://github.com/nbuyer/libmpvdelphi).
 
 Currently, **under development**.
 
-Even though Video-player ueses the libmpv library component from the mpv project to play videos, it does not follow almost any shortcut keys or reuse config or scripts or anything. It just simply plays videos quickly and easily without any distraction.
+Even though Video-player utilize the libmpv library to play videos, it does not use any other functionalities of mpv such as scripts or on-screen controls. It just simply plays videos quickly and easily without being overwhelemed by vast number of options. If you want full control and customization, this player isn't for you.  
 
 ## Current progress
 
@@ -14,14 +14,12 @@ Even though Video-player ueses the libmpv library component from the mpv project
 [x] Basic keyboard command including,  
 ```
 Space/Pause/P => Play or Pause 
-Right => Skip 10 sec 
-Left => Go back 10 sec 
-Shift+Right => Skip 100 sec 
-Shift+Left => Go back 100 sec 
-Ctrl+Right => Next video 
-Ctrl+Left => Previous video 
-Up => Volume up by 5 
-Down => Volume down by 5 
+Right => Skip 10 sec  
+Left => Go back 10 sec  
+Shift+Right => Next video  
+Shift+Left => Previous video 
+Ctrl+Right => Skip 100 sec
+Ctrl+Left => Go back 100 sec 
 Up => Volume up by 5 
 Down => Volume down by 5 
 Ctrl+Up => Volume up by 10 
@@ -34,11 +32,12 @@ Q => App quit
 ```
 Wheele down => Volume down  
 Wheele up => Volume up  
-Right click => show on screen/visual controls.  
+
 ```
 
 [ ] Seek bar.  
 [ ] Elapsed time.  
+[ ] More visual control buttons.  
 [ ] Right click popup menu.  
 
 
