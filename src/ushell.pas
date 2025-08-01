@@ -42,17 +42,42 @@ type
     procedure IdleTimerOverlayControlsHideStartTimer(Sender: TObject);
     procedure IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
     procedure IdleTimerOverlayControlsHideTimer(Sender: TObject);
-    procedure Image1Click(Sender: TObject);
     procedure RoundedImageClick(Sender: TObject);
-    procedure TrackBarVolumeKeyDown(Sender: TObject; var Key: Word;
-      Shift: TShiftState);
+    procedure RoundedImageMouseEnter(Sender: TObject);
+    procedure RoundedImageMouseLeave(Sender: TObject);
+    procedure SliderSeekChangeValue(Sender: TObject);
+    procedure SliderSeekMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure SliderSeekMouseEnter(Sender: TObject);
+    procedure SliderSeekMouseLeave(Sender: TObject);
+    procedure SliderSeekMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure SliderSeekMouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+    procedure TrackBarVolumeChangeValue(Sender: TObject);
+    procedure TrackBarVolumeMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure TrackBarVolumeMouseEnter(Sender: TObject);
+    procedure TrackBarVolumeMouseLeave(Sender: TObject);
+    procedure TrackBarVolumeMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure TrackBarVolumeMouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
   private
     FPos: TPoint;
     FisMouseDown: boolean;
     FisMoving: boolean;
+    FblnTrackBarVolumeChanging:boolean; // Change volume using TrackBar manually.
+    FblnTrackBarVolumeUpdating:boolean; // Update volume value from player.
+    FblnSliderSeekChanging:boolean; // Change seek using TrackBar manually.
+    FblnSliderSeekUpdating:boolean; // Update seek position value from player.
     FblnInhibitIdleHideControls: boolean;
-    public
-      Property IsInhibitIdleHideControls:boolean read FblnInhibitIdleHideControls;
+  public
+    Property IsTrackBarVolumeChanging:boolean read FblnTrackBarVolumeChanging;
+    Property IsTrackBarVolumeUpdating:boolean read FblnTrackBarVolumeUpdating write FblnTrackBarVolumeUpdating;
+    Property IsSliderSeekChanging:boolean read FblnSliderSeekChanging;
+    Property IsSliderSeekUpdating:boolean read FblnSliderSeekUpdating write FblnSliderSeekUpdating;
+    Property IsInhibitIdleHideControls:boolean read FblnInhibitIdleHideControls;
   end;
 
 var
@@ -67,25 +92,11 @@ uses
 
 { TfrmShell }
 
-
 procedure TfrmShell.FormCreate(Sender: TObject);
 begin
 
   RoundedImage.Picture.LoadFromResourceName(Hinstance,'FLUENT_PLAY_CIRCLE_48_FILLED');
   //Image1.Picture.LoadFromResourceName(Hinstance,'48_TRANSPARENT');
-end;
-
-procedure TfrmShell.Button1Click(Sender: TObject);
-begin
-  //Outputdebugstring(pchar('TfrmShell.Button1Click'));
-end;
-
-procedure TfrmShell.Button1KeyDown(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
-begin
-  // Somehow this button steals all the key down events...
-  //Outputdebugstring(pchar('TfrmShell.Button1KeyDown'));
-  frmMain.FormKeyDown(self,Key,Shift);
 end;
 
 procedure TfrmShell.FormShow(Sender: TObject);
@@ -108,6 +119,90 @@ begin
   IdleTimerOverlayControlsHide.Enabled:=true;
 end;
 
+procedure TfrmShell.FormDropFiles(Sender: TObject;
+  const FileNames: array of string);
+begin
+  frmMain.FormDropFiles(self,FileNames);
+end;
+
+procedure TfrmShell.FormKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  // Button1 stole all the key down events..
+  frmMain.DebugOutput('TfrmShell.FormKeyDown');
+  frmMain.FormKeyDown(self,Key,Shift);
+end;
+
+procedure TfrmShell.FormDblClick(Sender: TObject);
+begin
+  // this is needed for mouse drag window to work correctly.
+  FisMoving:=false;
+  FisMouseDown:=false;
+
+  if (frmMain.IsFullscreen) then
+  begin
+    frmMain.ShowFullScreen(false);
+  end else
+  begin
+    frmMain.ShowFullScreen(true);
+  end;
+end;
+
+procedure TfrmShell.FormMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  case Button of
+    mbLeft: begin
+      FPos.X:=X;
+      FPos.Y:=Y;
+      FisMouseDown:=true;
+    end;
+    mbRight: begin
+      //  Right click show controls.
+      frmMain.ShowOverlayControls();
+    end;
+  end;
+end;
+
+procedure TfrmShell.FormMouseEnter(Sender: TObject);
+begin
+  //frmMain.DebugOutput('FormMouseEnter');
+  FblnInhibitIdleHideControls:=true;
+end;
+
+procedure TfrmShell.FormMouseLeave(Sender: TObject);
+begin
+  //frmMain.DebugOutput('FormMouseLeave');
+  FblnInhibitIdleHideControls:=false;
+end;
+
+procedure TfrmShell.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
+  Y: Integer);
+begin
+  if ((not FisMouseDown) and (not FisMoving)) then
+  begin
+    frmMain.ShowOverlayControls();
+  end;
+
+  if (frmMain.IsFullscreen) then exit;
+
+  if (FisMouseDown) then
+  begin
+    FisMoving:=true;
+    frmMain.Left:=frmMain.Left+X-FPos.X;
+    frmMain.Top:=frmMain.Top+Y-FPos.Y;
+  end;
+end;
+
+procedure TfrmShell.FormMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  FisMouseDown:=false;
+  FisMoving:=False;
+
+end;
+
+
 procedure TfrmShell.IdleTimerOverlayControlsHideStartTimer(Sender: TObject);
 begin
   //frmMain.DebugOutput('StartTimer');
@@ -125,10 +220,20 @@ begin
   frmMain.HideOverlayControls;
 end;
 
-procedure TfrmShell.Image1Click(Sender: TObject);
-begin
 
+procedure TfrmShell.Button1Click(Sender: TObject);
+begin
+  //Outputdebugstring(pchar('TfrmShell.Button1Click'));
 end;
+
+procedure TfrmShell.Button1KeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  // Somehow this button steals all the key down events...
+  frmMain.DebugOutput('TfrmShell.Button1KeyDown');
+  frmMain.FormKeyDown(self,Key,Shift);
+end;
+
 
 procedure TfrmShell.RoundedImageClick(Sender: TObject);
 var
@@ -179,99 +284,157 @@ begin
   }
 end;
 
-procedure TfrmShell.TrackBarVolumeKeyDown(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
+procedure TfrmShell.RoundedImageMouseEnter(Sender: TObject);
 begin
-  // Somehow this TrackBar steals all the key down events...
-  //Outputdebugstring(pchar('TfrmShell.TrackBarVolumeKeyDown'));
-  frmMain.FormKeyDown(self,Key,Shift);
-end;
-
-procedure TfrmShell.FormDropFiles(Sender: TObject;
-  const FileNames: array of string);
-begin
-  frmMain.FormDropFiles(self,FileNames);
-end;
-
-procedure TfrmShell.FormKeyDown(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
-begin
-  // Button1 stole all the key down events..
-  //Outputdebugstring(pchar('TfrmShell.FormKeyDown'));
-  frmMain.FormKeyDown(self,Key,Shift);
-end;
-
-procedure TfrmShell.FormDblClick(Sender: TObject);
-begin
-  // this is needed for mouse drag window to work correctly.
-  FisMoving:=false;
-  FisMouseDown:=false;
-
-  if (frmMain.IsFullscreen) then
-  begin
-    frmMain.ShowFullScreen(false);
-  end else
-  begin
-    frmMain.ShowFullScreen(true);
-  end;
-end;
-
-procedure TfrmShell.FormMouseDown(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
-begin
-  case Button of
-    mbLeft: begin
-      FPos.X:=X;
-      FPos.Y:=Y;
-      FisMouseDown:=true;
-    end;
-    mbRight: begin
-      //  Right click show controls.
-      frmMain.ShowOverlayControls();
-    end;
-  end;
-end;
-
-procedure TfrmShell.FormMouseEnter(Sender: TObject);
-begin
-  frmMain.DebugOutput('TfrmShell.FormMouseEnter');
-  //frmMain.ShowOverlayControls();
-  //IdleTimerOverlayControlsHide.Enabled:=false;
   FblnInhibitIdleHideControls:=true;
 end;
 
-procedure TfrmShell.FormMouseLeave(Sender: TObject);
+procedure TfrmShell.RoundedImageMouseLeave(Sender: TObject);
 begin
-  frmMain.DebugOutput('TfrmShell.FormMouseLeave');
-  //IdleTimerOverlayControlsHide.Enabled:=true;
-  FblnInhibitIdleHideControls:=false;
+  //FblnInhibitIdleHideControls:=false;
 end;
 
-procedure TfrmShell.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: Integer);
+
+procedure TfrmShell.TrackBarVolumeMouseDown(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
-  if ((not FisMouseDown) and (not FisMoving)) then
+  FblnTrackBarVolumeChanging:=true;
+end;
+
+procedure TfrmShell.TrackBarVolumeMouseUp(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+  FblnTrackBarVolumeChanging:=false;
+end;
+
+procedure TfrmShell.TrackBarVolumeMouseWheel(Sender: TObject;
+  Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint;
+  var Handled: Boolean);
+var
+  curVol:double;
+  newVol:integer;
+begin
+  Handled := true;
+
+  // Gets current volume.
+  curVol := frmMain.Player.GetVolume;
+
+  //newVol := WheelDelta div 10;
+  // testing...
+  //newVol := newVol div 2;
+  newVol := 0;
+
+  if (WheelDelta < 0) then
   begin
-    frmMain.ShowOverlayControls();
+    newVol := -6;
+    if (curVol <= abs(newVol)) then
+    begin
+      frmMain.SetVolume(0);
+    end else begin
+      frmMain.SetVolume(Trunc(curVol)+newVol);
+    end;
+  end else
+  begin
+    newVol := 6;
+    newVol:=Trunc(curVol)+newVol;
+    if (1000 <= newVol) then
+    begin
+      frmMain.SetVolume(1000);
+    end else begin
+      frmMain.SetVolume(newVol);
+    end;
   end;
 
-  if (frmMain.IsFullscreen) then exit;
+end;
 
-  if (FisMouseDown) then
-  begin
-    FisMoving:=true;
-    frmMain.Left:=frmMain.Left+X-FPos.X;
-    frmMain.Top:=frmMain.Top+Y-FPos.Y;
+procedure TfrmShell.TrackBarVolumeMouseEnter(Sender: TObject);
+begin
+  FblnInhibitIdleHideControls:=true;
+end;
+
+procedure TfrmShell.TrackBarVolumeMouseLeave(Sender: TObject);
+begin
+  //FblnInhibitIdleHideControls:=false;
+end;
+
+procedure TfrmShell.TrackBarVolumeChangeValue(Sender: TObject);
+begin
+  if (not FblnTrackBarVolumeUpdating) then begin
+    frmMain.SetVolume(TrackBarVolume.Value);
   end;
 end;
 
-procedure TfrmShell.FormMouseUp(Sender: TObject; Button: TMouseButton;
+
+procedure TfrmShell.SliderSeekMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
-  FisMouseDown:=false;
-  FisMoving:=False;
-
+  FblnSliderSeekChanging:=true;
 end;
+
+procedure TfrmShell.SliderSeekMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  FblnSliderSeekChanging:=false;
+end;
+
+procedure TfrmShell.SliderSeekMouseWheel(Sender: TObject; Shift: TShiftState;
+  WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+var
+  newValue:integer;
+begin
+  Handled := true;
+  FblnSliderSeekChanging:=true;
+
+  if (WheelDelta < 0) then
+  begin
+    newValue := -2;
+    if (SliderSeek.Value <= abs(newValue)) then
+    begin
+      SliderSeek.Value := 0;
+    end else begin
+      SliderSeek.Value := SliderSeek.Value + newValue;
+    end;
+  end else
+  begin
+    newValue := SliderSeek.Value + 1;
+    if (SliderSeek.MaxValue >= (newValue)) then
+    begin
+      //SliderSeek.Value := newPos; // not good when playing.
+      frmMain.Player.Seek(1,true);
+    end;
+  end;
+  FblnSliderSeekChanging:=false;
+end;
+
+procedure TfrmShell.SliderSeekMouseEnter(Sender: TObject);
+begin
+  FblnInhibitIdleHideControls:=true;
+end;
+
+procedure TfrmShell.SliderSeekMouseLeave(Sender: TObject);
+begin
+  //FblnInhibitIdleHideControls:=false;
+end;
+
+procedure TfrmShell.SliderSeekChangeValue(Sender: TObject);
+var
+  newPos:double;
+begin
+  if (IsSliderSeekUpdating) then exit;
+  if (SliderSeek.MaxValue = 0) then exit;
+  if (SliderSeek.MaxValue < SliderSeek.Value) then exit;
+
+  if (frmMain.Player <> nil) then
+  begin
+    try
+      newPos:=SliderSeek.Value div 10;
+    except
+      exit;
+    end;
+    frmMain.Player.Seek(newPos, false);
+  end;
+end;
+
 
 procedure TfrmShell.FormDestroy(Sender: TObject);
 begin

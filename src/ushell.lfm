@@ -12,7 +12,6 @@ object frmShell: TfrmShell
   ClientWidth = 878
   Color = clBlack
   DesignTimePPI = 144
-  LCLVersion = '4.0.0.4'
   OnCreate = FormCreate
   OnDblClick = FormDblClick
   OnDestroy = FormDestroy
@@ -43,26 +42,38 @@ object frmShell: TfrmShell
     Width = 200
     MaxValue = 1000
     Value = 1000
+    OnChangeValue = TrackBarVolumeChangeValue
     Align = alCustom
     Anchors = [akRight, akBottom]
     BorderSpacing.Top = 160
     BorderSpacing.Bottom = 360
     BorderSpacing.Around = 48
+    OnMouseDown = TrackBarVolumeMouseDown
+    OnMouseEnter = TrackBarVolumeMouseEnter
+    OnMouseLeave = TrackBarVolumeMouseLeave
+    OnMouseUp = TrackBarVolumeMouseUp
+    OnMouseWheel = TrackBarVolumeMouseWheel
   end
   object SliderSeek: TBCFluentSlider
     Left = 40
     Height = 48
     Top = 19
     Width = 792
+    OnChangeValue = SliderSeekChangeValue
     Anchors = [akLeft, akRight, akBottom]
+    OnMouseDown = SliderSeekMouseDown
+    OnMouseEnter = SliderSeekMouseEnter
+    OnMouseLeave = SliderSeekMouseLeave
+    OnMouseUp = SliderSeekMouseUp
+    OnMouseWheel = SliderSeekMouseWheel
   end
   object LabelTimeFormatted: TLabel
     Left = 64
     Height = 30
     Top = 84
-    Width = 45
+    Width = 127
     Anchors = [akLeft, akBottom]
-    Caption = '0 / 0'
+    Caption = '00:00 / 00:00'
     Font.Color = clWhite
     Font.Height = -22
     ParentFont = False
@@ -78,6 +89,8 @@ object frmShell: TfrmShell
     Quality = rfBestQuality
     Proportional = True
     Anchors = [akBottom]
+    OnMouseEnter = RoundedImageMouseEnter
+    OnMouseLeave = RoundedImageMouseLeave
     OnClick = RoundedImageClick
   end
   object IdleTimerOverlayControlsHide: TIdleTimer

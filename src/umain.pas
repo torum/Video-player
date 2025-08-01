@@ -102,6 +102,7 @@ type
     {$endif}
     function GetCurrentMonitor():TMonitor;
     function GetCurrentMonitorIndex():integer;
+    function FormatTime(sec: integer): string;
   public
     Player: TMPVBasePlayer;
     procedure ShowFullScreen(blnOn: boolean);
@@ -455,9 +456,9 @@ begin
   Player.OnErrorMessage:=@OnPlayerErrorMessage;
 
   frmShell.TrackBarVolume.Value:=FintVolume;
-  SetVolume(FintVolume);
+  //SetVolume(FintVolume); // no need to set here, since TrackBarVolume.Value without flag updates it.
 
-  // Need to be here in FormShow. not in the OnCreate.
+  // This need to be here in FormShow. not in the OnCreate.
   if (FstFileList.Count> 0) then
   begin
     LoadVideo;
@@ -827,9 +828,7 @@ end;
 procedure TfrmMain.OnPlayerProgress(Sender: TObject; CurSec, TotalSec: Double);
 begin
   FdblCurSec := CurSec;
-
-  if (FdblTotalSec <> TotalSec) then
-    FdblTotalSec := TotalSec;
+  FdblTotalSec := TotalSec;
 
   // Need TThread.Synchronize();
   TThread.Queue(nil,@UpdateSeekValue);
@@ -851,10 +850,7 @@ procedure TfrmMain.UpdateSeekValue();
 var
   curTimeElapsed,totalTime:longint;
 begin
-  //DebugOutput('OnPlayerProgress:' + FdblCurSec.ToString);
-
   if (frmShell = nil) then exit;
-  frmShell.SliderSeek.MinValue:=0;
 
   try
     totalTime := Round(FdblTotalSec * 10);
@@ -867,7 +863,6 @@ begin
   if (frmShell.SliderSeek.MaxValue <> totalTime) then
   begin
     frmShell.SliderSeek.MaxValue := totalTime;
-    //frmShell.LabelTotalTime.Caption := totalTime.ToString;
   end;
 
   try
@@ -879,14 +874,34 @@ begin
 
   if (curTimeElapsed >= totalTime) then exit;
 
-  if (frmShell.SliderSeek.Value <> curTimeElapsed) then
+  frmShell.IsSliderSeekUpdating := true;
+  if (not frmShell.IsSliderSeekChanging) then
   begin
-    frmShell.SliderSeek.Value := curTimeElapsed;
-    //frmShell.LabelElapsedTime.Caption := curTimeElapsed.ToString;
+    if (frmShell.SliderSeek.Value <> curTimeElapsed) then
+    begin
+      frmShell.SliderSeek.Value := curTimeElapsed;
+    end;
   end;
+  frmShell.LabelTimeFormatted.Caption := FormatTime(curTimeElapsed) + ' / ' + FormatTime(totalTime);
+  frmShell.IsSliderSeekUpdating := false;
 
-  frmShell.LabelTimeFormatted.Caption := curTimeElapsed.ToString + ' / ' + totalTime.ToString;
+end;
 
+function TfrmMain.FormatTime(sec: longint): string;
+var
+  TimeValue: TDateTime;
+begin
+  if (sec < 11) then result := '0';
+
+  sec := sec div 10;
+  TimeValue := sec / SecsPerDay;
+  if (TimeValue > 3600) then
+  begin
+    result := FormatDateTime('hh:nn:ss', TimeValue);
+  end else
+  begin
+    result := FormatDateTime('nn:ss', TimeValue);
+  end;
 end;
 
 procedure TfrmMain.OnPlayerErrorMessage(Sender: TObject; const Prefix: string; Level: Int32; const Msg: string);
@@ -1221,28 +1236,22 @@ end;
 
 procedure TfrmMain.FormMouseWheel(Sender: TObject; Shift: TShiftState;
   WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
-var
-  curVol:double;
-  newVol:integer;
 begin
-  //outputdebugstring(pchar(WheelDelta.ToString));
-  curVol := Player.GetVolume;
-
-  newVol := WheelDelta div 10;
-  // testing...
-  newVol := newVol div 2;
-  //Outputdebugstring(pchar(newVol.ToString));
-
-  SetVolume(Trunc(curVol)+newVol);
 
   // Show controls
-  ShowOverlayControls();
+  //ShowOverlayControls();
 end;
 
 procedure TfrmMain.SetVolume(newVol:double);
 begin
+    frmShell.IsTrackBarVolumeUpdating := true;
     Player.SetVolume(newVol);
-    frmShell.TrackBarVolume.Value:=Trunc(newVol);
+    if (not frmShell.IsTrackBarVolumeChanging) then
+    begin
+      frmShell.TrackBarVolume.Value:=Trunc(newVol);
+    end;
+    frmShell.IsTrackBarVolumeUpdating := false;
+
     // for settings save.
     FintVolume:=Trunc(newVol);
 end;
