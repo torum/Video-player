@@ -120,6 +120,7 @@ type
   end;
 
   {$ifdef windows}
+  { For EnableBlur
   AccentPolicy = packed record
     AccentState: Integer;
     AccentFlags: Integer;
@@ -132,6 +133,7 @@ type
     pData: Pointer;
     dataSize: ULONG;
   end;
+  }
   {$endif}
 
 var
@@ -448,6 +450,8 @@ begin
   Player.SetPropertyString('osd-font-size', '16');
   //this isn't it. Player.SetPropertyString('osd-outline-size', '0'); //Default: 1.65
 
+  //
+  //Player.SetPropertyString('vo', 'libmpv');
 
   // Subscribing to status change event
   Player.OnStateChged := @OnPlayerStatusChanged; // @PlayerStatusChanged if objectpascal mode, PlayerStatusChanged if delphi.

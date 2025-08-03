@@ -2,13 +2,10 @@ unit MPVBasePlayer;
 
 // MPV base player classes
 // Author: Edward G. (nbuyer@gmail.com)
-// https://github.com/nbuyer/libmpvdelphi
-
-
 
 {.$DEFINE MPV_DYNAMIC_LOAD} // should define in project options "Conditional defines"
 
-//{$SETPEOPTFLAGS $4000} // Control Flow Guard ON
+{.$SETPEOPTFLAGS $4000} // Control Flow Guard ON
 
 {$R-}
 
@@ -18,7 +15,7 @@ uses
   {$IFDEF MSWINDOWS}
   Windows,
   {$ENDIF}
-  SysUtils, Classes, SyncObjs, Variants,
+  SysUtils, Classes, SyncObjs, Variants, Math,
   MPVConst, MPVClient, MPVNode, MPVTrack,
   MPVStreamCB, MPVRender;
 
@@ -100,6 +97,7 @@ type
     procedure SetState(eNewState: TMPVPlayerState);
   protected
     m_hMPV: PMPVHandle; // MPV Handle
+    m_nAPIVer: UInt32;
 
     m_fLenInSec, m_fCurSec: Double; // Total / current seconds   "time-pos"
     m_fLenMax: Double; // Total-0.002, a var to check if reach max
@@ -258,6 +256,7 @@ type
     property Handle: PMPVHandle read m_hMPV;
     // Player current status/information
     property FileName: string read m_sFileName;
+    property APIVersion: UInt32 read m_nAPIVer;
     property CurrentVideoTrack: string read m_sCurVTrk write SetVTrack;
     property CurrentAudioTrack: string read m_sCurATrk write SetATrack;
     property CurrentSubtitle: string read m_sCurSTrk write SetSTrack;
@@ -925,6 +924,7 @@ begin
     mpv_terminate_destroy(m_hMPV); //mpv_destroy(m_hMPV);
     //TMPVDestroyThread.Create(m_hMPV);
     m_hMPV := nil;
+    m_nAPIVer := 0;
   end;
 end;
 
@@ -1188,6 +1188,8 @@ end;
 
 function TMPVBasePlayer.InitPlayer(const sWinHandle, sScrShotDir, sConfigDir, sLogFile: string;
   fEventWait: Double): TMPVErrorCode;
+var
+  OldMask: TFPUExceptionMask;
 begin
   if not MPVLibLoaded('') then
   begin
@@ -1197,8 +1199,18 @@ begin
 
   FreePlayer();
 
+  m_nAPIVer := mpv_client_api_version();
+
   // Basic procedure copied from MPV.NET
-  m_hMPV := mpv_create();
+
+  // Fixed for FreePascal
+  OldMask := GetExceptionMask;
+  SetExceptionMask(OldMask + [exInvalidOp]);
+  try
+     m_hMPV := mpv_create();
+  finally
+    SetExceptionMask(OldMask);
+  end;
   if m_hMPV=nil then
   begin
     Result := MPV_ERROR_NOMEM;
@@ -1218,7 +1230,7 @@ begin
 //  SetPropertyString('osd-playing-msg', '${filename}');
   if sLogFile<>'' then SetPropertyString(STR_LOG_FILE, sLogFile);
   SetPropertyString(STR_WID, sWinHandle);
-  SetPropertyString('osc', 'no'); // On Screen Control
+  SetPropertyString('osc', 'yes'); // On Screen Control
   SetPropertyString('force-window', 'yes');
   SetPropertyString('config-dir', sConfigDir); // mpv.conf location
   SetPropertyString('config', 'yes');
