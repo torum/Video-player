@@ -2,12 +2,11 @@ object frmMain: TfrmMain
   Left = 682
   Height = 422
   Top = 37
-  Width = 632
+  Width = 878
   Align = alClient
   AllowDropFiles = True
   Color = clBlack
   DesignTimePPI = 144
-  LCLVersion = '4.2.0.0'
   OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery

@@ -22,6 +22,7 @@ object frmShell: TfrmShell
   OnMouseLeave = FormMouseLeave
   OnMouseMove = FormMouseMove
   OnMouseUp = FormMouseUp
+  OnMouseWheel = FormMouseWheel
   OnShow = FormShow
   object Button1: TButton
     Left = 384
@@ -36,9 +37,9 @@ object frmShell: TfrmShell
     OnKeyDown = Button1KeyDown
   end
   object TrackBarVolume: TBCFluentSlider
-    Left = 600
+    Left = 608
     Height = 48
-    Top = 69
+    Top = 77
     Width = 200
     MaxValue = 1000
     Value = 1000
@@ -79,10 +80,10 @@ object frmShell: TfrmShell
     ParentFont = False
   end
   object RoundedImage: TBCRoundedImage
-    Left = 416
-    Height = 48
-    Top = 77
-    Width = 48
+    Left = 410
+    Height = 58
+    Top = 69
+    Width = 58
     Style = isRoundedRectangle
     BorderStyle = []
     Rounding = 24
@@ -92,6 +93,36 @@ object frmShell: TfrmShell
     OnMouseEnter = RoundedImageMouseEnter
     OnMouseLeave = RoundedImageMouseLeave
     OnClick = RoundedImageClick
+  end
+  object RoundedImageNext: TBCRoundedImage
+    Left = 498
+    Height = 46
+    Top = 77
+    Width = 46
+    Style = isRoundedRectangle
+    BorderStyle = []
+    Rounding = 24
+    Quality = rfBestQuality
+    Proportional = True
+    Anchors = [akBottom]
+    OnMouseEnter = RoundedImageMouseEnter
+    OnMouseLeave = RoundedImageMouseLeave
+    OnClick = RoundedImageNextClick
+  end
+  object RoundedImagePrev: TBCRoundedImage
+    Left = 336
+    Height = 46
+    Top = 77
+    Width = 46
+    Style = isRoundedRectangle
+    BorderStyle = []
+    Rounding = 24
+    Quality = rfBestQuality
+    Proportional = True
+    Anchors = [akBottom]
+    OnMouseEnter = RoundedImageMouseEnter
+    OnMouseLeave = RoundedImageMouseLeave
+    OnClick = RoundedImagePrevClick
   end
   object IdleTimerOverlayControlsHide: TIdleTimer
     Enabled = False

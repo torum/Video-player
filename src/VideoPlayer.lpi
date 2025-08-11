@@ -13,8 +13,12 @@
         <DpiAware Value="True"/>
       </XPManifest>
       <Icon Value="0"/>
-      <Resources Count="1">
-        <Resource_0 FileName="assets\fluent_play_circle_48_filled.png" Type="RCDATA" ResourceName="FLUENT_PLAY_CIRCLE_48_FILLED"/>
+      <Resources Count="5">
+        <Resource_0 FileName="assets\ic_fluent_play_circle_24_filled.png" Type="RCDATA" ResourceName="IC_FLUENT_PLAY_CIRCLE_24_FILLED"/>
+        <Resource_1 FileName="assets\ic_fluent_pause_circle_24_filled.png" Type="RCDATA" ResourceName="IC_FLUENT_PAUSE_CIRCLE_24_FILLED"/>
+        <Resource_2 FileName="assets\ic_fluent_add_circle_24_filled.png" Type="RCDATA" ResourceName="IC_FLUENT_ADD_CIRCLE_24_FILLED"/>
+        <Resource_3 FileName="assets\ic_fluent_arrow_circle_left_24_filled.png" Type="RCDATA" ResourceName="IC_FLUENT_ARROW_CIRCLE_LEFT_24_FILLED"/>
+        <Resource_4 FileName="assets\ic_fluent_arrow_circle_right_24_filled.png" Type="RCDATA" ResourceName="IC_FLUENT_ARROW_CIRCLE_RIGHT_24_FILLED"/>
       </Resources>
     </General>
     <BuildModes>

@@ -20,12 +20,13 @@ type
     IdleTimerOverlayControlsHide: TIdleTimer;
     RoundedImage: TBCRoundedImage;
     LabelTimeFormatted: TLabel;
+    RoundedImageNext: TBCRoundedImage;
+    RoundedImagePrev: TBCRoundedImage;
     SliderSeek: TBCFluentSlider;
     TrackBarVolume: TBCFluentSlider;
     Button1: TButton;
     procedure Button1Click(Sender: TObject);
-    procedure Button1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState
-      );
+    procedure Button1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure FormCreate(Sender: TObject);
     procedure FormDblClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -38,6 +39,8 @@ type
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FormMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure FormShow(Sender: TObject);
     procedure IdleTimerOverlayControlsHideStartTimer(Sender: TObject);
     procedure IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
@@ -45,6 +48,8 @@ type
     procedure RoundedImageClick(Sender: TObject);
     procedure RoundedImageMouseEnter(Sender: TObject);
     procedure RoundedImageMouseLeave(Sender: TObject);
+    procedure RoundedImageNextClick(Sender: TObject);
+    procedure RoundedImagePrevClick(Sender: TObject);
     procedure SliderSeekChangeValue(Sender: TObject);
     procedure SliderSeekMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
@@ -73,6 +78,7 @@ type
     FblnSliderSeekUpdating:boolean; // Update seek position value from player.
     FblnInhibitIdleHideControls: boolean;
   public
+    procedure ChangeVolumeWithMouseWheel(WheelDelta: Integer);
     Property IsTrackBarVolumeChanging:boolean read FblnTrackBarVolumeChanging;
     Property IsTrackBarVolumeUpdating:boolean read FblnTrackBarVolumeUpdating write FblnTrackBarVolumeUpdating;
     Property IsSliderSeekChanging:boolean read FblnSliderSeekChanging;
@@ -94,9 +100,9 @@ uses
 
 procedure TfrmShell.FormCreate(Sender: TObject);
 begin
-
-  RoundedImage.Picture.LoadFromResourceName(Hinstance,'FLUENT_PLAY_CIRCLE_48_FILLED');
-  //Image1.Picture.LoadFromResourceName(Hinstance,'48_TRANSPARENT');
+  RoundedImage.Picture.LoadFromResourceName(Hinstance,'IC_FLUENT_PLAY_CIRCLE_24_FILLED'); //IC_FLUENT_PAUSE_CIRCLE_24_FILLED
+  RoundedImageNext.Picture.LoadFromResourceName(Hinstance,'IC_FLUENT_ARROW_CIRCLE_RIGHT_24_FILLED');
+  RoundedImagePrev.Picture.LoadFromResourceName(Hinstance,'IC_FLUENT_ARROW_CIRCLE_LEFT_24_FILLED');
 end;
 
 procedure TfrmShell.FormShow(Sender: TObject);
@@ -199,9 +205,50 @@ procedure TfrmShell.FormMouseUp(Sender: TObject; Button: TMouseButton;
 begin
   FisMouseDown:=false;
   FisMoving:=False;
-
 end;
 
+procedure TfrmShell.FormMouseWheel(Sender: TObject; Shift: TShiftState;
+  WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+begin
+  Handled := true;
+  ChangeVolumeWithMouseWheel(WheelDelta);
+end;
+
+procedure TfrmShell.ChangeVolumeWithMouseWheel(WheelDelta: Integer);
+var
+  curVol:double;
+  newVol:integer;
+begin
+  // Gets current volume.
+  curVol := frmMain.Player.GetVolume;
+
+  //newVol := WheelDelta div 10;
+  // testing...
+  //newVol := newVol div 2;
+  newVol := 0;
+
+  if (WheelDelta < 0) then
+  begin
+    newVol := -6;
+    if (curVol <= abs(newVol)) then
+    begin
+      frmMain.SetVolume(0);
+    end else begin
+      frmMain.SetVolume(Trunc(curVol)+newVol);
+    end;
+  end else
+  begin
+    newVol := 6;
+    newVol:=Trunc(curVol)+newVol;
+    if (1000 <= newVol) then
+    begin
+      frmMain.SetVolume(1000);
+    end else begin
+      frmMain.SetVolume(newVol);
+    end;
+  end;
+
+end;
 
 procedure TfrmShell.IdleTimerOverlayControlsHideStartTimer(Sender: TObject);
 begin
@@ -294,6 +341,16 @@ begin
   //FblnInhibitIdleHideControls:=false;
 end;
 
+procedure TfrmShell.RoundedImageNextClick(Sender: TObject);
+begin
+  frmMain.LoadNextVideo;
+end;
+
+procedure TfrmShell.RoundedImagePrevClick(Sender: TObject);
+begin
+  frmMain.LoadPrevVideo
+end;
+
 
 procedure TfrmShell.TrackBarVolumeMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
@@ -310,41 +367,9 @@ end;
 procedure TfrmShell.TrackBarVolumeMouseWheel(Sender: TObject;
   Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint;
   var Handled: Boolean);
-var
-  curVol:double;
-  newVol:integer;
 begin
   Handled := true;
-
-  // Gets current volume.
-  curVol := frmMain.Player.GetVolume;
-
-  //newVol := WheelDelta div 10;
-  // testing...
-  //newVol := newVol div 2;
-  newVol := 0;
-
-  if (WheelDelta < 0) then
-  begin
-    newVol := -6;
-    if (curVol <= abs(newVol)) then
-    begin
-      frmMain.SetVolume(0);
-    end else begin
-      frmMain.SetVolume(Trunc(curVol)+newVol);
-    end;
-  end else
-  begin
-    newVol := 6;
-    newVol:=Trunc(curVol)+newVol;
-    if (1000 <= newVol) then
-    begin
-      frmMain.SetVolume(1000);
-    end else begin
-      frmMain.SetVolume(newVol);
-    end;
-  end;
-
+  ChangeVolumeWithMouseWheel(WheelDelta);
 end;
 
 procedure TfrmShell.TrackBarVolumeMouseEnter(Sender: TObject);

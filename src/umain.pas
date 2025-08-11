@@ -2,6 +2,7 @@ unit UMain;
 
 {$mode objfpc}{$H+}
 
+
 interface
 
 uses
@@ -75,9 +76,11 @@ type
     // no longer in use.
     FintAlphaBlendValue:integer;
 
+    // for sync
     FintVolume:integer;
     FdblCurSec: Double;
     FdblTotalSec: Double;
+    FplayerState: TMPVPlayerState;
 
     procedure OnPlayerStatusChanged(Sender: TObject; eState: TMPVPlayerState);
     procedure OnPlayerPropertyChanged(Sender: TObject; ID: MPVUInt64; Fmt: mpv_format; pData: Pointer);
@@ -97,6 +100,7 @@ type
     procedure ParsePramsAndBuildFileList; 
     procedure LoadSettings;
     procedure UpdateSeekValue();
+    procedure UpdatePlayButtonImage();
     {$ifdef windows}
     //procedure EnableBlur(blon:boolean);
     {$endif}
@@ -420,6 +424,8 @@ begin
   ApplyFormDarkTitle(self, true, false); // needed to force=false bacause of the glich when changing to fullscreen.
   {$endif}
 
+  frmShell.ReAlign;
+  frmShell.Align:=alBottom;
   frmShell.Color:=clBlack;
   frmShell.AlphaBlend:=true;
   frmShell.AlphaBlendValue:=FintAlphaBlendValue;// set to max 255 or lower to show media controls when needed.
@@ -773,8 +779,18 @@ procedure TfrmMain.OnPlayerStatusChanged(Sender: TObject; eState: TMPVPlayerStat
 begin
   // Need TThread.Synchronize();
 
+  FplayerState := eState;
+
+  if (eState = TMPVPlayerState.mpsPlay) or (eState = TMPVPlayerState.mpsPause) then
+  begin
+    TThread.Synchronize(nil,@UpdatePlayButtonImage );
+    exit; // for now.
+  end;
+
   if (eState = TMPVPlayerState.mpsPlay) then
   begin
+    //DebugOutput('OnPlayerStatusChanged mpsPlay');
+
     // uhh not working? < looks like it gives me 0 for the first video.
     //outputdebugstring(pchar('mpsPlay height:'+Player.VideoHeight.ToString + ' width:'+Player.VideoWidth.ToString));
 
@@ -791,46 +807,69 @@ begin
     }
     // Manual
     // TODO:
-
   end
   else if (eState = TMPVPlayerState.mpsPause) then
   begin
-    //
+    //DebugOutput('OnPlayerStatusChanged mpsPause');
   end
   else if (eState = TMPVPlayerState.mpsStep) then
   begin
     // TODO: don't know what this is
+    DebugOutput('OnPlayerStatusChanged mpsStep');
   end
   else if (eState = TMPVPlayerState.mpsLoading) then
   begin
-    // TODO: don't know what this is
     // how about "loaded"?
+    //DebugOutput('OnPlayerStatusChanged mpsLoading');
   end
   else if (eState = TMPVPlayerState.mpsUnk) then
   begin
     // TODO: don't know what this is
+    DebugOutput('OnPlayerStatusChanged mpsUnk');
   end
   else if (eState = TMPVPlayerState.mpsErr) then
   begin
     //outputdebugstring(pchar('mpsErr'));
+    DebugOutput('OnPlayerStatusChanged mpsErr');
   end
   else if (eState = TMPVPlayerState.mpsEnd) then
   begin
-    //outputdebugstring(pchar('mpsEnd'));
+    DebugOutput('OnPlayerStatusChanged mpsEnd');
     // We don't know if this "End" is just finished the video or closing down the app. Need to check that or else we get AV.
     //frmMain.LoadNextVideo;
   end;
+end;
 
+procedure TfrmMain.UpdatePlayButtonImage;
+begin
+  if (frmShell = nil) then exit;
+
+  if (FplayerState = TMPVPlayerState.mpsPlay) then
+  begin
+    //frmShell.RoundedImage.Picture.Clear;
+    frmShell.RoundedImage.Picture.LoadFromResourceName(Hinstance,'IC_FLUENT_PAUSE_CIRCLE_24_FILLED');
+    frmShell.RoundedImage.Repaint;
+  end
+  else if (FplayerState = TMPVPlayerState.mpsPause) then
+  begin
+    //frmShell.RoundedImage.Picture.Clear;
+    frmShell.RoundedImage.Picture.LoadFromResourceName(Hinstance,'IC_FLUENT_PLAY_CIRCLE_24_FILLED');
+    frmShell.RoundedImage.Repaint;
+  end;
 end;
 
 procedure TfrmMain.OnPlayerPropertyChanged(Sender: TObject; ID: MPVUInt64; Fmt: mpv_format; pData: Pointer);
 begin
   // Need TThread.Synchronize();
+  if (frmShell = nil) then exit;
+
   //DebugOutput('OnPlayerPropertyChanged');
 end;
 
 procedure TfrmMain.OnPlayerProgress(Sender: TObject; CurSec, TotalSec: Double);
 begin
+  if (frmShell = nil) then exit;
+
   FdblCurSec := CurSec;
   FdblTotalSec := TotalSec;
 
@@ -1241,9 +1280,12 @@ end;
 procedure TfrmMain.FormMouseWheel(Sender: TObject; Shift: TShiftState;
   WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
 begin
+  Handled := true;
 
-  // Show controls
-  //ShowOverlayControls();
+  if (frmShell <> nil) then
+  begin
+    frmShell.ChangeVolumeWithMouseWheel(WheelDelta);
+  end;
 end;
 
 procedure TfrmMain.SetVolume(newVol:double);
