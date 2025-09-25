@@ -12,6 +12,7 @@ object frmShell: TfrmShell
   ClientWidth = 878
   Color = clBlack
   DesignTimePPI = 144
+  LCLVersion = '4.2.0.0'
   OnCreate = FormCreate
   OnDblClick = FormDblClick
   OnDestroy = FormDestroy

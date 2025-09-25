@@ -126,6 +126,8 @@ begin
 
   //SetWindowPos(Self.Handle, HWND_TOPMOST, self.Left, self.Top, self.Width, self.Height, SWP_NOSIZE);
 
+  Panel1.Repaint;
+
   IdleTimerOverlayControlsHide.Enabled:=true;
 end;
 

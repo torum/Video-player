@@ -30,7 +30,12 @@ object frmMain: TfrmMain
     Top = 40
   end
   object PopupMenu1: TPopupMenu
+    AutoPopup = False
     Left = 56
     Top = 200
+    object MenuItemStayOnTop: TMenuItem
+      Caption = 'StayOnTop'
+      OnClick = MenuItemStayOnTopClick
+    end
   end
 end

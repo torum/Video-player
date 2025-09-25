@@ -14,7 +14,8 @@ backup/
 *.obj
 lib
 *.mp4
-
+src/libmpv-2.dll
+src/*.dll
 
 
 
@@ -100,4 +101,4 @@ __recovery/
 
 # Boss dependency manager vendor folder https://github.com/HashLoad/boss
 modules/
-src/libmpv-2.dll
+

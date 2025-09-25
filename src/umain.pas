@@ -17,6 +17,7 @@ type
   { TfrmMain }
 
   TfrmMain = class(TForm)
+    MenuItemStayOnTop: TMenuItem;
     PopupMenu1: TPopupMenu;
     XMLConfig: TXMLConfig;
     procedure FormActivate(Sender: TObject);
@@ -36,6 +37,7 @@ type
     procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure FormShow(Sender: TObject);
+    procedure MenuItemStayOnTopClick(Sender: TObject);
 
   private
     // Main file lists
@@ -57,6 +59,7 @@ type
     FOptIncludeSubFolders:boolean;
     FOptBackgroundBlack:boolean;
     FOptMinimulFileSizeKiloByte:integer; //TODO: need to check if this is even needed.
+    FoptStayOnTop:boolean;
 
     // App status flags.
     FisFullScreen: boolean;
@@ -473,6 +476,25 @@ begin
   if (FstFileList.Count> 0) then
   begin
     LoadVideo;
+  end;
+end;
+
+procedure TfrmMain.MenuItemStayOnTopClick(Sender: TObject);
+begin
+  if (self.FoptStayOnTop) then
+  begin
+    self.FormStyle:=fsNormal;
+
+    MenuItemStayOnTop.Checked:=false;
+    self.FoptStayOnTop:=false;
+    //
+    frmShell.Panel1.Repaint;
+  end else
+  begin
+    self.FormStyle:=fsSystemStayOnTop;
+
+    MenuItemStayOnTop.Checked:=true;
+    self.FoptStayOnTop:=true;
   end;
 end;
 
@@ -1269,9 +1291,31 @@ end;
 procedure TfrmMain.FormMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
-  if ((not FisMouseDown) and (not FisMoving)) then
-  begin
-    ShowOverlayControls();
+
+  case Button of
+  mbLeft:
+    begin
+      if ((not FisMouseDown) and (not FisMoving)) then
+      begin
+        ShowOverlayControls();
+      end else
+      begin
+        if (frmMain.Top < 0) then
+        begin
+          frmMain.Top:=0;
+        end;
+        //Outputdebugstring(Pchar(intToStr(frmMain.Left)));
+        if (frmMain.Left < -10) then
+        begin
+          frmMain.Left:= -10;
+        end;
+      end;
+    end;
+  mbRight:
+    begin
+      // Show popupmenu.
+      PopupMenu1.PopUp();
+    end;
   end;
 
   FisMouseDown:=false;
