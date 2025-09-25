@@ -58,10 +58,10 @@ object frmShell: TfrmShell
   object SliderSeek: TBCFluentSlider
     Left = 40
     Height = 48
-    Top = 19
+    Top = 8
     Width = 792
     OnChangeValue = SliderSeekChangeValue
-    Anchors = [akLeft, akRight, akBottom]
+    Anchors = [akLeft, akRight]
     OnMouseDown = SliderSeekMouseDown
     OnMouseEnter = SliderSeekMouseEnter
     OnMouseLeave = SliderSeekMouseLeave
@@ -79,50 +79,65 @@ object frmShell: TfrmShell
     Font.Height = -22
     ParentFont = False
   end
-  object RoundedImage: TBCRoundedImage
-    Left = 410
-    Height = 58
-    Top = 69
-    Width = 58
-    Style = isRoundedRectangle
-    BorderStyle = []
-    Rounding = 24
-    Quality = rfBestQuality
-    Proportional = True
+  object Panel1: TPanel
+    Left = 296
+    Height = 75
+    Top = 64
+    Width = 288
+    Align = alCustom
     Anchors = [akBottom]
-    OnMouseEnter = RoundedImageMouseEnter
-    OnMouseLeave = RoundedImageMouseLeave
-    OnClick = RoundedImageClick
-  end
-  object RoundedImageNext: TBCRoundedImage
-    Left = 498
-    Height = 46
-    Top = 77
-    Width = 46
-    Style = isRoundedRectangle
-    BorderStyle = []
-    Rounding = 24
-    Quality = rfBestQuality
-    Proportional = True
-    Anchors = [akBottom]
-    OnMouseEnter = RoundedImageMouseEnter
-    OnMouseLeave = RoundedImageMouseLeave
-    OnClick = RoundedImageNextClick
-  end
-  object RoundedImagePrev: TBCRoundedImage
-    Left = 336
-    Height = 46
-    Top = 77
-    Width = 46
-    Style = isRoundedRectangle
-    BorderStyle = []
-    Rounding = 24
-    Quality = rfBestQuality
-    Proportional = True
-    Anchors = [akBottom]
-    OnMouseEnter = RoundedImageMouseEnter
-    OnMouseLeave = RoundedImageMouseLeave
-    OnClick = RoundedImagePrevClick
+    BevelOuter = bvNone
+    ClientHeight = 75
+    ClientWidth = 288
+    Color = clNone
+    ParentBackground = False
+    ParentColor = False
+    TabOrder = 1
+    object RoundedImagePrev: TBCRoundedImage
+      Left = 16
+      Height = 46
+      Top = 16
+      Width = 46
+      Style = isRoundedRectangle
+      BorderStyle = []
+      Rounding = 24
+      Quality = rfBestQuality
+      Proportional = True
+      Anchors = [akBottom]
+      OnMouseEnter = RoundedImageMouseEnter
+      OnMouseLeave = RoundedImageMouseLeave
+      OnClick = RoundedImagePrevClick
+    end
+    object RoundedImage: TBCRoundedImage
+      Left = 112
+      Height = 58
+      Top = 8
+      Width = 58
+      Style = isRoundedRectangle
+      BorderStyle = []
+      Rounding = 24
+      Quality = rfBestQuality
+      Proportional = True
+      Anchors = [akBottom]
+      OnMouseEnter = RoundedImageMouseEnter
+      OnMouseLeave = RoundedImageMouseLeave
+      OnClick = RoundedImageClick
+    end
+    object RoundedImageNext: TBCRoundedImage
+      Left = 224
+      Height = 46
+      Top = 16
+      Width = 46
+      Style = isRoundedRectangle
+      BorderStyle = []
+      Rounding = 24
+      Quality = rfBestQuality
+      Proportional = True
+      Anchors = [akBottom]
+      OnMouseEnter = RoundedImageMouseEnter
+      OnMouseLeave = RoundedImageMouseLeave
+      OnClick = RoundedImageNextClick
+    end
   end
   object IdleTimerOverlayControlsHide: TIdleTimer
     Enabled = False

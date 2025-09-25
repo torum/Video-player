@@ -410,7 +410,8 @@ end;
 
 procedure TfrmMain.FormActivate(Sender: TObject);
 begin
-
+  if (frmShell = nil) then exit;
+  frmShell.Panel1.Repaint;
 end;
 
 procedure TfrmMain.FormShow(Sender: TObject);

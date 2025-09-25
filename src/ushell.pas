@@ -18,8 +18,9 @@ type
 
   TfrmShell = class(TForm)
     IdleTimerOverlayControlsHide: TIdleTimer;
-    RoundedImage: TBCRoundedImage;
+    Panel1: TPanel;
     LabelTimeFormatted: TLabel;
+    RoundedImage: TBCRoundedImage;
     RoundedImageNext: TBCRoundedImage;
     RoundedImagePrev: TBCRoundedImage;
     SliderSeek: TBCFluentSlider;
@@ -100,6 +101,9 @@ uses
 
 procedure TfrmShell.FormCreate(Sender: TObject);
 begin
+  Panel1.Color := clBlack;
+  Panel1.Repaint;
+
   RoundedImage.Picture.LoadFromResourceName(Hinstance,'IC_FLUENT_PLAY_CIRCLE_24_FILLED'); //IC_FLUENT_PAUSE_CIRCLE_24_FILLED
   RoundedImageNext.Picture.LoadFromResourceName(Hinstance,'IC_FLUENT_ARROW_CIRCLE_RIGHT_24_FILLED');
   RoundedImagePrev.Picture.LoadFromResourceName(Hinstance,'IC_FLUENT_ARROW_CIRCLE_LEFT_24_FILLED');
