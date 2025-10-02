@@ -273,7 +273,6 @@ begin
   frmMain.HideOverlayControls;
 end;
 
-
 procedure TfrmShell.Button1Click(Sender: TObject);
 begin
   //Outputdebugstring(pchar('TfrmShell.Button1Click'));
@@ -286,7 +285,6 @@ begin
   frmMain.DebugOutput('TfrmShell.Button1KeyDown');
   frmMain.FormKeyDown(self,Key,Shift);
 end;
-
 
 procedure TfrmShell.RoundedImageClick(Sender: TObject);
 var
@@ -312,8 +310,10 @@ begin
   begin
      // TODO: mpsEnd is also fired when closing? need to check.
     frmMain.DebugOutput('TMPVPlayerState.mpsEnd @RoundedImageClick');
-  end;
 
+    // restart
+    frmMain.ReStartVideo;
+  end;
 
   {
   else if (plState = TMPVPlayerState.mpsUnk) then
@@ -357,7 +357,6 @@ begin
   frmMain.LoadPrevVideo
 end;
 
-
 procedure TfrmShell.TrackBarVolumeMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
@@ -394,7 +393,6 @@ begin
     frmMain.SetVolume(TrackBarVolume.Value);
   end;
 end;
-
 
 procedure TfrmShell.SliderSeekMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
@@ -465,7 +463,6 @@ begin
     frmMain.Player.Seek(newPos, false);
   end;
 end;
-
 
 procedure TfrmShell.FormDestroy(Sender: TObject);
 begin

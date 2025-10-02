@@ -7,7 +7,6 @@ object frmMain: TfrmMain
   AllowDropFiles = True
   Color = clBlack
   DesignTimePPI = 144
-  LCLVersion = '4.2.0.0'
   OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
@@ -31,11 +30,20 @@ object frmMain: TfrmMain
   end
   object PopupMenu1: TPopupMenu
     AutoPopup = False
+    OnPopup = PopupMenu1Popup
     Left = 56
     Top = 200
     object MenuItemStayOnTop: TMenuItem
       Caption = 'StayOnTop'
       OnClick = MenuItemStayOnTopClick
+    end
+    object MenuItemRepeat: TMenuItem
+      Caption = 'Repeat'
+      OnClick = MenuItemRepeatClick
+    end
+    object MenuItemSingle: TMenuItem
+      Caption = 'Single'
+      OnClick = MenuItemSingleClick
     end
   end
 end

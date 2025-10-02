@@ -17,6 +17,8 @@ type
   { TfrmMain }
 
   TfrmMain = class(TForm)
+    MenuItemSingle: TMenuItem;
+    MenuItemRepeat: TMenuItem;
     MenuItemStayOnTop: TMenuItem;
     PopupMenu1: TPopupMenu;
     XMLConfig: TXMLConfig;
@@ -37,7 +39,10 @@ type
     procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure FormShow(Sender: TObject);
+    procedure MenuItemRepeatClick(Sender: TObject);
+    procedure MenuItemSingleClick(Sender: TObject);
     procedure MenuItemStayOnTopClick(Sender: TObject);
+    procedure PopupMenu1Popup(Sender: TObject);
 
   private
     // Main file lists
@@ -59,7 +64,9 @@ type
     FOptIncludeSubFolders:boolean;
     FOptBackgroundBlack:boolean;
     FOptMinimulFileSizeKiloByte:integer; //TODO: need to check if this is even needed.
-    FoptStayOnTop:boolean;
+    FOptStayOnTop:boolean;
+    FOptRepeat:boolean;
+    FOptSingle:boolean;
 
     // App status flags.
     FisFullScreen: boolean;
@@ -115,6 +122,7 @@ type
     procedure ShowFullScreen(blnOn: boolean);
     procedure LoadNextVideo;
     procedure LoadPrevVideo;
+    procedure ReStartVideo;
     procedure SetVolume(newVol:double);
     procedure ShowOverlayControls;
     procedure HideOverlayControls();
@@ -124,6 +132,10 @@ type
     property CurrentMonitor:TMonitor read GetCurrentMonitor;
     Property IsFullScreen:boolean read FisFullscreen;
     Property IntAlphaBlendValue:integer read FintAlphaBlendValue;
+    property OptStayOnTop: boolean read FOptStayOnTop write FOptStayOnTop;
+    property OptRepeat: boolean read FOptRepeat write FOptRepeat; 
+    property OptSingle: boolean read FOptSingle write FOptSingle;
+
   end;
 
   {$ifdef windows}
@@ -153,6 +165,10 @@ var
 }
 {$endif}
 
+
+resourcestring
+  resstrAppTitle = 'Movie Player';
+
 implementation
 
 uses
@@ -165,14 +181,14 @@ uses
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
   // Set ini values.
-  self.Caption := 'Movie Player';
+  self.Caption := resstrAppTitle;//'Movie Player';
 
   FstFileList:=TStringList.create;
   FstDirectoryList:=TStringList.create;
   FstPlaylistList:=TstringList.Create;
 
   FOptBackgroundBlack:=true;
-  FOptFileExts:='.mp4;.mkv;.avi;.mpeg;.wmv';
+  FOptFileExts:='.mp4;.mkv;.avi;.mpeg;.mpg;.wmv;.flv;.divx;.xvid;.rm;.rmvb;.m4v';
   FOptPlaylistExts:='.m3u;.xspf';
 
   FstFileExtList := TStringList.Create;
@@ -254,6 +270,10 @@ begin
   begin
     self.Color:=clWhite;
   end;
+
+  FOptRepeat := XMLConfig.GetValue('/Opts/Repeat',false);
+  FOptSingle := XMLConfig.GetValue('/Opts/Single',false);
+  FoptStayOnTop := XMLConfig.GetValue('/Opts/StayOnTop',false);
 
   FOptIncludeSubFolders := XMLConfig.GetValue('/Opts/IncludeSubFolders',false);
   FintVolume := XMLConfig.GetValue('/State/Volume',50);
@@ -479,25 +499,6 @@ begin
   end;
 end;
 
-procedure TfrmMain.MenuItemStayOnTopClick(Sender: TObject);
-begin
-  if (self.FoptStayOnTop) then
-  begin
-    self.FormStyle:=fsNormal;
-
-    MenuItemStayOnTop.Checked:=false;
-    self.FoptStayOnTop:=false;
-    //
-    frmShell.Panel1.Repaint;
-  end else
-  begin
-    self.FormStyle:=fsSystemStayOnTop;
-
-    MenuItemStayOnTop.Checked:=true;
-    self.FoptStayOnTop:=true;
-  end;
-end;
-
 procedure TfrmMain.LoadDirectories(const Dirs: TStringList; FList: TStringList);
 var
   f:int64;
@@ -713,7 +714,17 @@ begin
       FintCurrentFileIndex := FintCurrentFileIndex+1;
     end else
     begin
-      FintCurrentFileIndex := 0;
+      if (FOptRepeat) then
+      begin
+        FintCurrentFileIndex := 0;
+      end else
+      begin
+        //
+        Player.Stop;
+        //Self.Caption := resstrAppTitle;
+        //FintCurrentFileIndex := 0;
+        exit;
+      end;
     end;
 
     LoadVideo;
@@ -738,6 +749,16 @@ begin
   end;
 end;
 
+procedure TfrmMain.ReStartVideo;
+begin
+  if FstFileList.Count > 0 then
+  begin
+    FintCurrentFileIndex := 0;
+
+    LoadVideo;
+  end;
+end;
+
 procedure TfrmMain.LoadVideo;
 var
   strPath:string;
@@ -746,6 +767,7 @@ begin
 
   if FileList.Count > 0 then
   begin
+
     // Includes file path
     //strPath := MinimizeName(FileList[FintCurrentFileIndex],Self.Canvas, self.width - 300);
     // File name only.
@@ -859,7 +881,13 @@ begin
   begin
     DebugOutput('OnPlayerStatusChanged mpsEnd');
     // We don't know if this "End" is just finished the video or closing down the app. Need to check that or else we get AV.
-    //frmMain.LoadNextVideo;
+
+    TThread.Synchronize(nil,@UpdatePlayButtonImage);
+
+    if (not FOptSingle) then
+    begin
+      TThread.Synchronize(nil,@LoadNextVideo);
+    end;
   end;
 end;
 
@@ -874,6 +902,12 @@ begin
     frmShell.RoundedImage.Repaint;
   end
   else if (FplayerState = TMPVPlayerState.mpsPause) then
+  begin
+    //frmShell.RoundedImage.Picture.Clear;
+    frmShell.RoundedImage.Picture.LoadFromResourceName(Hinstance,'IC_FLUENT_PLAY_CIRCLE_24_FILLED');
+    frmShell.RoundedImage.Repaint;
+  end
+    else if (FplayerState = TMPVPlayerState.mpsEnd) then
   begin
     //frmShell.RoundedImage.Picture.Clear;
     frmShell.RoundedImage.Picture.LoadFromResourceName(Hinstance,'IC_FLUENT_PLAY_CIRCLE_24_FILLED');
@@ -1347,6 +1381,58 @@ begin
     FintVolume:=Trunc(newVol);
 end;
 
+procedure TfrmMain.MenuItemRepeatClick(Sender: TObject);
+begin
+    if (self.FOptRepeat) then
+    begin
+      MenuItemRepeat.Checked:=false;
+      self.FoptRepeat:=false;
+    end else
+    begin
+      MenuItemRepeat.Checked:=true;
+      self.FoptRepeat:=true;
+    end;
+end;
+
+procedure TfrmMain.MenuItemSingleClick(Sender: TObject);
+begin
+    if (self.FOptSingle) then
+    begin
+      MenuItemSingle.Checked:=false;
+      self.FoptSingle:=false;
+    end else
+    begin
+      MenuItemSingle.Checked:=true;
+      self.FoptSingle:=true;
+    end;
+end;
+
+procedure TfrmMain.MenuItemStayOnTopClick(Sender: TObject);
+begin
+  if (self.FoptStayOnTop) then
+  begin
+    self.FormStyle:=fsNormal;
+
+    MenuItemStayOnTop.Checked:=false;
+    self.FoptStayOnTop:=false;
+    //
+    frmShell.Panel1.Repaint;
+  end else
+  begin
+    self.FormStyle:=fsSystemStayOnTop;
+
+    MenuItemStayOnTop.Checked:=true;
+    self.FoptStayOnTop:=true;
+  end;
+end;
+
+procedure TfrmMain.PopupMenu1Popup(Sender: TObject);
+begin
+  if FoptStayOnTop then MenuItemStayOnTop.Checked:=true else MenuItemStayOnTop.Checked:=false;
+  if FOptRepeat then MenuItemRepeat.Checked:=true else MenuItemRepeat.Checked:=false;
+  if FOptSingle then MenuItemSingle.Checked:=true else MenuItemSingle.Checked:=false;
+end;
+
 procedure TfrmMain.ShowFullScreen(blnOn: boolean);
 begin
   {$ifdef windows}
@@ -1615,10 +1701,13 @@ begin
 
   // Save options.
   //XMLConfig.SetValue('/Opts/Random',FOptRandom);
-  //XMLConfig.SetValue('/Opts/Repeat',FOptRepeat);
+  XMLConfig.SetValue('/Opts/Repeat',FOptRepeat);
+  XMLConfig.SetValue('/Opts/Single',FOptSingle);
+  XMLConfig.SetValue('/Opts/StayOnTop',FoptStayOnTop);
+
   //XMLConfig.SetValue('/Opts/Moniter',FOptIntMoniter);
   XMLConfig.SetValue('/Opts/MinimulFileSizeKiloByte',FOptMinimulFileSizeKiloByte);
-  //XMLConfig.SetValue('/Opts/StayOnTop',FoptStayOnTop);
+
   XMLConfig.SetValue('/Opts/BackgroundBlack',FoptBackgroundBlack);
   XMLConfig.SetValue('/Opts/IncludeSubFolders',FOptIncludeSubFolders);
   XMLConfig.SetValue('/Opts/FileExts',widestring(FOptFileExts));
