@@ -37,7 +37,7 @@ Wheel up/down on Seek bar
 [x] On-screen button controls including play/pause, next vieo, previous video.
 
  ## TODO:
-[x] Right click popup menu "Stay on top", "Repeat", "Single" menu.  
+[x] Right click popup menu "Stay on top", "Repeat", "Single", "Shuffle" menu.  
 [ ] More options.   
 [ ] Commandline options.  
 [ ] Linux version. 

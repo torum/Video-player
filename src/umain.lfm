@@ -46,5 +46,9 @@ object frmMain: TfrmMain
       Caption = 'Single'
       OnClick = MenuItemSingleClick
     end
+    object MenuItemShuffle: TMenuItem
+      Caption = 'Shuffle'
+      OnClick = MenuItemShuffleClick
+    end
   end
 end

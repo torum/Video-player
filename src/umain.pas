@@ -17,6 +17,7 @@ type
   { TfrmMain }
 
   TfrmMain = class(TForm)
+    MenuItemShuffle: TMenuItem;
     MenuItemSingle: TMenuItem;
     MenuItemRepeat: TMenuItem;
     MenuItemStayOnTop: TMenuItem;
@@ -40,6 +41,7 @@ type
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure FormShow(Sender: TObject);
     procedure MenuItemRepeatClick(Sender: TObject);
+    procedure MenuItemShuffleClick(Sender: TObject);
     procedure MenuItemSingleClick(Sender: TObject);
     procedure MenuItemStayOnTopClick(Sender: TObject);
     procedure PopupMenu1Popup(Sender: TObject);
@@ -67,6 +69,7 @@ type
     FOptStayOnTop:boolean;
     FOptRepeat:boolean;
     FOptSingle:boolean;
+    FOptShuffle:boolean;
 
     // App status flags.
     FisFullScreen: boolean;
@@ -117,6 +120,7 @@ type
     function GetCurrentMonitor():TMonitor;
     function GetCurrentMonitorIndex():integer;
     function FormatTime(sec: integer): string;
+    procedure Shuffle(Strings: TStringList);
   public
     Player: TMPVBasePlayer;
     procedure ShowFullScreen(blnOn: boolean);
@@ -135,6 +139,7 @@ type
     property OptStayOnTop: boolean read FOptStayOnTop write FOptStayOnTop;
     property OptRepeat: boolean read FOptRepeat write FOptRepeat; 
     property OptSingle: boolean read FOptSingle write FOptSingle;
+    property OptShuffle: boolean read FOptShuffle write FOptShuffle;
 
   end;
 
@@ -239,6 +244,8 @@ begin
   // Create so called shell to overlay some media controls using alpha values.
   frmShell := TfrmShell.create(self);
   frmShell.Parent := self;
+
+  Randomize;
 end;
 
 procedure TfrmMain.LoadSettings();
@@ -282,6 +289,7 @@ begin
   FOptRepeat := XMLConfig.GetValue('/Opts/Repeat',false);
   FOptSingle := XMLConfig.GetValue('/Opts/Single',false);
   FoptStayOnTop := XMLConfig.GetValue('/Opts/StayOnTop',false);
+  FOptShuffle := XMLConfig.GetValue('/Opts/Shuffle',false);
 
   FOptIncludeSubFolders := XMLConfig.GetValue('/Opts/IncludeSubFolders',false);
   FintVolume := XMLConfig.GetValue('/State/Volume',50);
@@ -437,6 +445,11 @@ begin
     FintCurrentFileIndex:=0;
   end;
 
+  if (FOptShuffle) then
+  begin
+    Shuffle(FstFileList);
+  end;
+
 end;
 
 procedure TfrmMain.FormActivate(Sender: TObject);
@@ -505,6 +518,14 @@ begin
   begin
     LoadVideo;
   end;
+end;
+
+procedure TfrmMain.Shuffle(Strings: TStringList);
+var
+  i: Integer;
+begin
+  for i := Strings.Count-1 downto 1 do
+    Strings.Exchange(i, Random(i+1));
 end;
 
 procedure TfrmMain.LoadDirectories(const Dirs: TStringList; FList: TStringList);
@@ -703,6 +724,12 @@ begin
         FintCurrentFileIndex:=0;
       end;
     end;
+
+    if (FOptShuffle) then
+    begin
+      Shuffle(FstFileList);
+    end;
+
     LoadVideo;
     SetFocus;
     BringToFront;
@@ -711,6 +738,7 @@ begin
   TmpFileList.Free;
   TmpDirList.Free;
   TmpPlayList.Free;
+
 end;
 
 procedure TfrmMain.LoadNextVideo;
@@ -1402,6 +1430,19 @@ begin
     end;
 end;
 
+procedure TfrmMain.MenuItemShuffleClick(Sender: TObject);
+begin
+    if (self.FOptShuffle) then
+    begin
+      MenuItemShuffle.Checked:=false;
+      self.FoptShuffle:=false;
+    end else
+    begin
+      MenuItemShuffle.Checked:=true;
+      self.FoptShuffle:=true;
+    end;
+end;
+
 procedure TfrmMain.MenuItemSingleClick(Sender: TObject);
 begin
     if (self.FOptSingle) then
@@ -1439,6 +1480,7 @@ begin
   if FoptStayOnTop then MenuItemStayOnTop.Checked:=true else MenuItemStayOnTop.Checked:=false;
   if FOptRepeat then MenuItemRepeat.Checked:=true else MenuItemRepeat.Checked:=false;
   if FOptSingle then MenuItemSingle.Checked:=true else MenuItemSingle.Checked:=false;
+  if FOptShuffle then MenuItemShuffle.Checked:=true else MenuItemShuffle.Checked:=false;
 end;
 
 procedure TfrmMain.ShowFullScreen(blnOn: boolean);
@@ -1719,7 +1761,8 @@ begin
   //XMLConfig.SetValue('/Opts/Random',FOptRandom);
   XMLConfig.SetValue('/Opts/Repeat',FOptRepeat);
   XMLConfig.SetValue('/Opts/Single',FOptSingle);
-  XMLConfig.SetValue('/Opts/StayOnTop',FoptStayOnTop);
+  XMLConfig.SetValue('/Opts/StayOnTop',FoptStayOnTop); 
+  XMLConfig.SetValue('/Opts/Shuffle',FOptShuffle);
 
   //XMLConfig.SetValue('/Opts/Moniter',FOptIntMoniter);
   XMLConfig.SetValue('/Opts/MinimulFileSizeKiloByte',FOptMinimulFileSizeKiloByte);
