@@ -155,6 +155,9 @@ type
   }
   {$endif}
 
+  {$ifdef windows}
+  function SetThreadExecutionState(esFlags: DWORD): DWORD; stdcall external 'kernel32.dll';
+  {$endif}
 var
   frmMain: TfrmMain;
 
@@ -177,6 +180,11 @@ uses
 {$R *.lfm}
 
 { TfrmMain }
+
+const
+  ES_SYSTEM_REQUIRED  = $00000001;
+  ES_DISPLAY_REQUIRED = $00000002;
+  ES_CONTINUOUS       = $80000000;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
@@ -1576,6 +1584,9 @@ begin
     BringToFront;
     SetForegroundWindow(handle);
 
+    // Re-enabling the Screensaver
+    SetThreadExecutionState(ES_CONTINUOUS);
+
   end else
   begin
     if FisFullScreen then
@@ -1619,6 +1630,11 @@ begin
     SetFocus;
     BringToFront;
     SetForegroundWindow(handle);
+
+
+    // Disabling the Screensaver
+    SetThreadExecutionState(ES_DISPLAY_REQUIRED or ES_SYSTEM_REQUIRED or ES_CONTINUOUS);
+
   end;
   {$endif}
 end;
