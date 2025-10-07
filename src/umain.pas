@@ -436,6 +436,11 @@ begin
     FisSingleFileSelected:=true;
   end;
 
+  if (FOptShuffle) then
+  begin
+    Shuffle(FstFileList);
+  end;
+
   if (FstFileList.indexOf(FstrInitialSelectedVideoFile) > -1) then
   begin
     FintCurrentFileIndex:=FstFileList.indexof(FstrInitialSelectedVideoFile);
@@ -443,11 +448,6 @@ begin
   begin
     // Start with 0
     FintCurrentFileIndex:=0;
-  end;
-
-  if (FOptShuffle) then
-  begin
-    Shuffle(FstFileList);
   end;
 
 end;
