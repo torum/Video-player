@@ -44,6 +44,7 @@ type
     procedure MenuItemShuffleClick(Sender: TObject);
     procedure MenuItemSingleClick(Sender: TObject);
     procedure MenuItemStayOnTopClick(Sender: TObject);
+    procedure PopupMenu1Close(Sender: TObject);
     procedure PopupMenu1Popup(Sender: TObject);
 
   private
@@ -85,6 +86,8 @@ type
     FPos: TPoint;
     FisMouseDown: boolean;
     FisMoving: boolean;
+
+    FisPopupVisible: boolean;
 
     // no longer in use.
     FintAlphaBlendValue:integer;
@@ -140,7 +143,7 @@ type
     property OptRepeat: boolean read FOptRepeat write FOptRepeat; 
     property OptSingle: boolean read FOptSingle write FOptSingle;
     property OptShuffle: boolean read FOptShuffle write FOptShuffle;
-
+    property IsPopupVisible: boolean read FisPopupVisible;
   end;
 
   {$ifdef windows}
@@ -1095,7 +1098,7 @@ begin
     begin             
       //outputdebugstring(pchar('TMPVPlayerState.mpsPlay'));
       Player.Pause;
-      ShowOverlayControls();
+      //ShowOverlayControls();
     end
     else if (plState = TMPVPlayerState.mpsPause) then
     begin                   
@@ -1113,7 +1116,8 @@ begin
       if (FileList.Count > 0) then
       begin
         // TODO: check auto next mode.
-        LoadNextVideo;
+        //LoadNextVideo;
+        ReStartVideo;
         //outputdebugstring(pchar(FileList[0]));
       end else
       begin
@@ -1155,7 +1159,7 @@ begin
       SetVolume(curVol+5);
     end;
     // Show controls
-    ShowOverlayControls();
+    //ShowOverlayControls();
   end;
   // Down
   if (Key = VK_DOWN) then
@@ -1169,7 +1173,7 @@ begin
       SetVolume(curVol-5);
     end;
     // Show controls
-    ShowOverlayControls();
+    //ShowOverlayControls();
   end;
 
   // Only if player is playing something.
@@ -1191,7 +1195,7 @@ begin
       begin
         Player.Seek(10,true);
       end;
-      ShowOverlayControls();
+      //ShowOverlayControls();
     end;
 
     // Back
@@ -1209,7 +1213,7 @@ begin
       begin
         Player.Seek(-10,true);
       end;
-      ShowOverlayControls();
+      //ShowOverlayControls();
     end;
 
 
@@ -1475,8 +1479,14 @@ begin
   end;
 end;
 
+procedure TfrmMain.PopupMenu1Close(Sender: TObject);
+begin
+  FisPopupVisible := false;
+end;
+
 procedure TfrmMain.PopupMenu1Popup(Sender: TObject);
 begin
+  FisPopupVisible := true;
   if FoptStayOnTop then MenuItemStayOnTop.Checked:=true else MenuItemStayOnTop.Checked:=false;
   if FOptRepeat then MenuItemRepeat.Checked:=true else MenuItemRepeat.Checked:=false;
   if FOptSingle then MenuItemSingle.Checked:=true else MenuItemSingle.Checked:=false;

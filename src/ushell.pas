@@ -254,6 +254,11 @@ begin
     end;
   end;
 
+  if (self.AlphaBlendValue <> 0) then
+  begin
+    IdleTimerOverlayControlsHide.Enabled:=false;
+    IdleTimerOverlayControlsHide.Enabled:=true;
+  end;
 end;
 
 procedure TfrmShell.IdleTimerOverlayControlsHideStartTimer(Sender: TObject);
@@ -269,8 +274,14 @@ end;
 procedure TfrmShell.IdleTimerOverlayControlsHideTimer(Sender: TObject);
 begin
   //frmMain.DebugOutput('Timer');
-
-  frmMain.HideOverlayControls;
+  if (frmMain.IsPopupVisible) then
+  begin
+    IdleTimerOverlayControlsHide.Enabled:=false;
+    IdleTimerOverlayControlsHide.Enabled:=true;
+  end else
+  begin
+    frmMain.HideOverlayControls;
+  end;
 end;
 
 procedure TfrmShell.Button1Click(Sender: TObject);
@@ -433,6 +444,12 @@ begin
     end;
   end;
   FblnSliderSeekChanging:=false;
+
+  if (self.AlphaBlendValue <> 0) then
+  begin
+    IdleTimerOverlayControlsHide.Enabled:=false;
+    IdleTimerOverlayControlsHide.Enabled:=true;
+  end;
 end;
 
 procedure TfrmShell.SliderSeekMouseEnter(Sender: TObject);
