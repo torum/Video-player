@@ -716,6 +716,11 @@ begin
     FstDirectoryList.Assign(TmpDirList);
     FstPlaylistList.Assign(TmpPlayList);
 
+    if (FOptShuffle) then
+    begin
+      Shuffle(FstFileList);
+    end;
+
     if (FstrInitialSelectedVideoFile <> '') then
     begin
       newCurrentIndex:=FstFileList.indexOf(FstrInitialSelectedVideoFile);
@@ -726,11 +731,6 @@ begin
       begin
         FintCurrentFileIndex:=0;
       end;
-    end;
-
-    if (FOptShuffle) then
-    begin
-      Shuffle(FstFileList);
     end;
 
     LoadVideo;
@@ -1630,6 +1630,9 @@ begin
       //frmShell.Visible:=true;
       frmShell.Refresh;
       frmShell.Repaint;
+
+      frmShell.IdleTimerOverlayControlsHide.Enabled:=true;
+      HideOverlayControls();
     end;
 
     SetFocus;
