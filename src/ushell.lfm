@@ -12,6 +12,7 @@ object frmShell: TfrmShell
   ClientWidth = 878
   Color = clBlack
   DesignTimePPI = 144
+  LCLVersion = '4.2.0.0'
   OnCreate = FormCreate
   OnDblClick = FormDblClick
   OnDestroy = FormDestroy
@@ -143,8 +144,6 @@ object frmShell: TfrmShell
     Enabled = False
     Interval = 2400
     OnTimer = IdleTimerOverlayControlsHideTimer
-    OnStartTimer = IdleTimerOverlayControlsHideStartTimer
-    OnStopTimer = IdleTimerOverlayControlsHideStopTimer
     Left = 176
     Top = 160
   end

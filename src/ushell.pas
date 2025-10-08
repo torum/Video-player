@@ -43,8 +43,6 @@ type
     procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure FormShow(Sender: TObject);
-    procedure IdleTimerOverlayControlsHideStartTimer(Sender: TObject);
-    procedure IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
     procedure IdleTimerOverlayControlsHideTimer(Sender: TObject);
     procedure RoundedImageClick(Sender: TObject);
     procedure RoundedImageMouseEnter(Sender: TObject);
@@ -128,6 +126,7 @@ begin
 
   Panel1.Repaint;
 
+  FblnInhibitIdleHideControls:=false;
   IdleTimerOverlayControlsHide.Enabled:=true;
 end;
 
@@ -179,7 +178,7 @@ end;
 procedure TfrmShell.FormMouseEnter(Sender: TObject);
 begin
   //frmMain.DebugOutput('FormMouseEnter');
-  FblnInhibitIdleHideControls:=true;
+  //FblnInhibitIdleHideControls:=true;
 end;
 
 procedure TfrmShell.FormMouseLeave(Sender: TObject);
@@ -193,6 +192,7 @@ procedure TfrmShell.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
 begin
   if ((not FisMouseDown) and (not FisMoving)) then
   begin
+    FblnInhibitIdleHideControls:=false;
     frmMain.ShowOverlayControls();
   end;
 
@@ -259,16 +259,6 @@ begin
     IdleTimerOverlayControlsHide.Enabled:=false;
     IdleTimerOverlayControlsHide.Enabled:=true;
   end;
-end;
-
-procedure TfrmShell.IdleTimerOverlayControlsHideStartTimer(Sender: TObject);
-begin
-  //frmMain.DebugOutput('StartTimer');
-end;
-
-procedure TfrmShell.IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
-begin
-
 end;
 
 procedure TfrmShell.IdleTimerOverlayControlsHideTimer(Sender: TObject);

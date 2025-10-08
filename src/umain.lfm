@@ -7,6 +7,7 @@ object frmMain: TfrmMain
   AllowDropFiles = True
   Color = clBlack
   DesignTimePPI = 144
+  LCLVersion = '4.2.0.0'
   OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery

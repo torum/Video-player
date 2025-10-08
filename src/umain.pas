@@ -228,7 +228,7 @@ begin
   {$endif}
 
 
-  FintAlphaBlendValue := 100;
+  FintAlphaBlendValue := 120;
 
   // Load settings
   LoadSettings();
@@ -485,7 +485,7 @@ begin
 
   // TODO: Check errors.
   //outputdebugstring(pchar(errcode.ToString));
-  //DebugOutput('err at FormShow: ' + errcode.ToString);
+  DebugOutput('Error on InitPlayer at FormShow: ' + errcode.ToString);
 
   Player.SetHardwareDecoding('yes');
 
