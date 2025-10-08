@@ -43,6 +43,7 @@ type
     procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure FormShow(Sender: TObject);
+    procedure IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
     procedure IdleTimerOverlayControlsHideTimer(Sender: TObject);
     procedure RoundedImageClick(Sender: TObject);
     procedure RoundedImageMouseEnter(Sender: TObject);
@@ -128,6 +129,11 @@ begin
 
   FblnInhibitIdleHideControls:=false;
   IdleTimerOverlayControlsHide.Enabled:=true;
+end;
+
+procedure TfrmShell.IdleTimerOverlayControlsHideStopTimer(Sender: TObject);
+begin
+  //FblnInhibitIdleHideControls:=false;
 end;
 
 procedure TfrmShell.FormDropFiles(Sender: TObject;
@@ -345,7 +351,7 @@ end;
 
 procedure TfrmShell.RoundedImageMouseLeave(Sender: TObject);
 begin
-  //FblnInhibitIdleHideControls:=false;
+  FblnInhibitIdleHideControls:=false;
 end;
 
 procedure TfrmShell.RoundedImageNextClick(Sender: TObject);
@@ -385,7 +391,7 @@ end;
 
 procedure TfrmShell.TrackBarVolumeMouseLeave(Sender: TObject);
 begin
-  //FblnInhibitIdleHideControls:=false;
+  FblnInhibitIdleHideControls:=false;
 end;
 
 procedure TfrmShell.TrackBarVolumeChangeValue(Sender: TObject);
@@ -449,7 +455,7 @@ end;
 
 procedure TfrmShell.SliderSeekMouseLeave(Sender: TObject);
 begin
-  //FblnInhibitIdleHideControls:=false;
+  FblnInhibitIdleHideControls:=false;
 end;
 
 procedure TfrmShell.SliderSeekChangeValue(Sender: TObject);
