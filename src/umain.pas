@@ -17,11 +17,17 @@ type
   { TfrmMain }
 
   TfrmMain = class(TForm)
+    MenuItemPlayPause: TMenuItem;
+    MenuItemStop: TMenuItem;
+    MenuItemPrevious: TMenuItem;
+    MenuItemNext: TMenuItem;
     MenuItemShuffle: TMenuItem;
     MenuItemSingle: TMenuItem;
     MenuItemRepeat: TMenuItem;
     MenuItemStayOnTop: TMenuItem;
     PopupMenu1: TPopupMenu;
+    Separator1: TMenuItem;
+    Separator2: TMenuItem;
     XMLConfig: TXMLConfig;
     procedure FormActivate(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -40,10 +46,14 @@ type
     procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure FormShow(Sender: TObject);
+    procedure MenuItemNextClick(Sender: TObject);
+    procedure MenuItemPlayPauseClick(Sender: TObject);
+    procedure MenuItemPreviousClick(Sender: TObject);
     procedure MenuItemRepeatClick(Sender: TObject);
     procedure MenuItemShuffleClick(Sender: TObject);
     procedure MenuItemSingleClick(Sender: TObject);
     procedure MenuItemStayOnTopClick(Sender: TObject);
+    procedure MenuItemStopClick(Sender: TObject);
     procedure PopupMenu1Close(Sender: TObject);
     procedure PopupMenu1Popup(Sender: TObject);
 
@@ -122,7 +132,7 @@ type
     {$endif}
     function GetCurrentMonitor():TMonitor;
     function GetCurrentMonitorIndex():integer;
-    function FormatTime(sec: integer): string;
+    function FormatTime(sec: longint): string;
     procedure Shuffle(Strings: TStringList);
   public
     Player: TMPVBasePlayer;
@@ -1185,15 +1195,15 @@ begin
     begin
       if (ssShift in Shift) then
       begin
-        // play next video
-        LoadNextVideo;
+        Player.Seek(10,true);
       end
       else if (ssCtrl in Shift) then
       begin
-        Player.Seek(100,true);
+        // play next video
+        LoadNextVideo;
       end else
       begin
-        Player.Seek(10,true);
+        Player.Seek(100,true);
       end;
       //ShowOverlayControls();
     end;
@@ -1203,15 +1213,15 @@ begin
     begin
       if (ssShift in Shift) then
       begin
-        // Play previous video.
-        LoadPrevVideo;
+        Player.Seek(-10,true);
       end
       else if (ssCtrl in Shift) then
       begin
-        Player.Seek(-100,true);
+        // Play previous video.
+        LoadPrevVideo;
       end else
-      begin
-        Player.Seek(-10,true);
+      begin         
+        Player.Seek(-100,true);
       end;
       //ShowOverlayControls();
     end;
@@ -1374,6 +1384,8 @@ begin
         ShowOverlayControls();
       end else
       begin
+        {
+        // This is not good when multiple displays are present.
         if (frmMain.Top < 0) then
         begin
           frmMain.Top:=0;
@@ -1383,6 +1395,7 @@ begin
         begin
           frmMain.Left:= -10;
         end;
+        }
       end;
     end;
   mbRight:
@@ -1477,6 +1490,52 @@ begin
     MenuItemStayOnTop.Checked:=true;
     self.FoptStayOnTop:=true;
   end;
+end;
+
+procedure TfrmMain.MenuItemStopClick(Sender: TObject);
+var
+  plState:TMPVPlayerState;
+begin
+
+  plState := Player.GetState;
+
+  if (plState = TMPVPlayerState.mpsPlay) then
+  begin
+    Player.Stop;
+  end
+  else if (plState = TMPVPlayerState.mpsPause) then
+  begin
+    Player.Stop;
+  end
+
+  // TODO: Clear title bar caption?
+end;
+
+procedure TfrmMain.MenuItemPlayPauseClick(Sender: TObject);
+var
+  plState:TMPVPlayerState;
+begin
+
+  plState := Player.GetState;
+
+  if (plState = TMPVPlayerState.mpsPlay) then
+  begin
+    Player.Pause;
+  end
+  else if (plState = TMPVPlayerState.mpsPause) then
+  begin
+    Player.Resume;
+  end
+end;
+
+procedure TfrmMain.MenuItemPreviousClick(Sender: TObject);
+begin
+  LoadPrevVideo;
+end;
+
+procedure TfrmMain.MenuItemNextClick(Sender: TObject);
+begin
+  LoadNextVideo;
 end;
 
 procedure TfrmMain.PopupMenu1Close(Sender: TObject);

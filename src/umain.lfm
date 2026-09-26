@@ -7,7 +7,7 @@ object frmMain: TfrmMain
   AllowDropFiles = True
   Color = clBlack
   DesignTimePPI = 144
-  LCLVersion = '4.2.0.0'
+  LCLVersion = '4.8.0.0'
   OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
@@ -35,9 +35,24 @@ object frmMain: TfrmMain
     OnClose = PopupMenu1Close
     Left = 56
     Top = 200
-    object MenuItemStayOnTop: TMenuItem
-      Caption = 'StayOnTop'
-      OnClick = MenuItemStayOnTopClick
+    object MenuItemPlayPause: TMenuItem
+      Caption = 'Play/Pause'
+      OnClick = MenuItemPlayPauseClick
+    end
+    object MenuItemStop: TMenuItem
+      Caption = 'Stop'
+      OnClick = MenuItemStopClick
+    end
+    object MenuItemPrevious: TMenuItem
+      Caption = 'Previous'
+      OnClick = MenuItemPreviousClick
+    end
+    object MenuItemNext: TMenuItem
+      Caption = 'Next'
+      OnClick = MenuItemNextClick
+    end
+    object Separator1: TMenuItem
+      Caption = '-'
     end
     object MenuItemRepeat: TMenuItem
       Caption = 'Repeat'
@@ -50,6 +65,13 @@ object frmMain: TfrmMain
     object MenuItemShuffle: TMenuItem
       Caption = 'Shuffle'
       OnClick = MenuItemShuffleClick
+    end
+    object Separator2: TMenuItem
+      Caption = '-'
+    end
+    object MenuItemStayOnTop: TMenuItem
+      Caption = 'StayOnTop'
+      OnClick = MenuItemStayOnTopClick
     end
   end
 end

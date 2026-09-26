@@ -13,12 +13,12 @@ Even though Video-player utilize the libmpv library to play videos, it does not 
 [x] Basic keyboard command including,  
 ```
 Space/Pause/P => Play or Pause 
-Right => Skip 10 sec  
-Left => Go back 10 sec  
-Ctrl+Right => Skip 100 sec
-Ctrl+Left => Go back 100 sec
-Shift+Right => Next video  
-Shift+Left => Previous video 
+Right => Skip 10 sec 
+Left => Go back 10 sec 
+Ctrl+Right => Next video 
+Ctrl+Left => Previous video 
+Shift+Right => Skip 100 sec 
+Shift+Left => Go back 100 sec 
 Up => Volume up by 5 
 Down => Volume down by 5 
 Ctrl+Up => Volume up by 10 
@@ -37,7 +37,6 @@ Wheel up/down on Seek bar
 [x] On-screen button controls including play/pause, next vieo, previous video.
 
  ## TODO:
-[x] Right click popup menu "Stay on top", "Repeat", "Single", "Shuffle" menu.  
 [ ] More options.   
 [ ] Commandline options.  
 [ ] Linux version. 
