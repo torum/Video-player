@@ -936,6 +936,10 @@ begin
     if (not FOptSingle) then
     begin
       TThread.Synchronize(nil,@LoadNextVideo);
+    end else
+    if (FOptRepeat) then
+    begin
+      TThread.Synchronize(nil,@LoadVideo);
     end;
   end;
 end;
